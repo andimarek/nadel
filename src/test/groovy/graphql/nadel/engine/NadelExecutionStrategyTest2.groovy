@@ -5,6 +5,7 @@ import graphql.ErrorType
 import graphql.GraphQLError
 import graphql.GraphqlErrorBuilder
 import graphql.execution.nextgen.ExecutionHelper
+import graphql.language.Argument
 import graphql.language.SourceLocation
 import graphql.nadel.DefinitionRegistry
 import graphql.nadel.FieldInfo
@@ -22,12 +23,10 @@ import graphql.nadel.result.ResultComplexityAggregator
 import graphql.nadel.testutils.TestUtil
 import graphql.schema.GraphQLSchema
 
-import javax.xml.transform.Result
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 
 import static graphql.language.AstPrinter.printAstCompact
-import static graphql.language.AstPrinter.printAst
 import static java.util.concurrent.CompletableFuture.completedFuture
 
 class NadelExecutionStrategyTest2 extends StrategyTestHelper {
@@ -2117,7 +2116,7 @@ class NadelExecutionStrategyTest2 extends StrategyTestHelper {
 
         def serviceExecutionHooks = new ServiceExecutionHooks() {
             @Override
-            CompletableFuture<Optional<GraphQLError>> isFieldForbidden(NormalizedQueryField normalizedField, Object userSuppliedContext) {
+            CompletableFuture<Optional<GraphQLError>> isFieldForbidden(NormalizedQueryField normalizedField, List<Argument> hydrationRootArguments, Object userSuppliedContext) {
                 completedFuture(Optional.of(expectedError))
             }
         }

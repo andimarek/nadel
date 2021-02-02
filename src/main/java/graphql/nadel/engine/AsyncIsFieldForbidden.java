@@ -1,6 +1,7 @@
 package graphql.nadel.engine;
 
 import graphql.GraphQLError;
+import graphql.language.Argument;
 import graphql.language.Field;
 import graphql.language.Node;
 import graphql.nadel.hooks.ServiceExecutionHooks;
@@ -21,10 +22,12 @@ public class AsyncIsFieldForbidden {
     private final Map<NormalizedQueryField, GraphQLError> fieldsToErrors = new ConcurrentHashMap<>();
     private final ServiceExecutionHooks serviceExecutionHooks;
     private final NadelContext nadelContext;
+    private final List<Argument> hydrationRootArguments;
 
-    public AsyncIsFieldForbidden(ServiceExecutionHooks serviceExecutionHooks, NadelContext nadelContext) {
+    public AsyncIsFieldForbidden(ServiceExecutionHooks serviceExecutionHooks, NadelContext nadelContext, List<Argument> hydrationRootArguments) {
         this.serviceExecutionHooks = serviceExecutionHooks;
         this.nadelContext = nadelContext;
+        this.hydrationRootArguments = hydrationRootArguments;
     }
 
     public CompletableFuture<Map<NormalizedQueryField, GraphQLError>> getForbiddenFields(Node<?> root) {
@@ -46,7 +49,7 @@ public class AsyncIsFieldForbidden {
         if (field.getName().equals(TypeNameMetaFieldDef.getName())) {
             return CompletableFuture.completedFuture(null);
         }
-        return serviceExecutionHooks.isFieldForbidden(field, nadelContext.getUserSuppliedContext())
+        return serviceExecutionHooks.isFieldForbidden(field, hydrationRootArguments, nadelContext.getUserSuppliedContext())
                 .thenCompose(graphQLError -> {
                     if (graphQLError.isPresent()) {
                         fieldsToErrors.put(field, graphQLError.get());
