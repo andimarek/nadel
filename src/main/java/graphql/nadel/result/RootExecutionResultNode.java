@@ -1,7 +1,7 @@
 package graphql.nadel.result;
 
 import graphql.Internal;
-import graphql.execution.ExecutionPath;
+import graphql.execution.ResultPath;
 
 import java.util.function.Consumer;
 
@@ -36,7 +36,7 @@ public class RootExecutionResultNode extends ObjectExecutionResultNode {
 
         @Override
         public RootExecutionResultNode build() {
-            super.executionPath(ExecutionPath.rootPath());
+            super.executionPath(ResultPath.rootPath());
             return new RootExecutionResultNode(this);
         }
     }

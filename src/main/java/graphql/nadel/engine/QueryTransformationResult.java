@@ -27,6 +27,10 @@ public class QueryTransformationResult {
 
     // needed when the underlying result tree is mapped back
     private final Map<String, FieldTransformation> fieldIdToTransformation;
+
+    // needed when the underlying result tree is mapped back
+    private final Map<FieldTransformation, String> transformationToFieldId;
+
     // needed when the underlying result tree is mapped back
     private final Map<String, String> typeRenameMappings;
 
@@ -40,6 +44,7 @@ public class QueryTransformationResult {
                                      Map<String, String> typeRenameMappings,
                                      List<String> referencedVariables,
                                      Map<String, FieldTransformation> fieldIdToTransformation,
+                                     Map<FieldTransformation, String> transformationToFieldId,
                                      Map<String, FragmentDefinition> transformedFragments,
                                      Map<String, Object> variableValues,
                                      TransformationMetadata removedFieldMap) {
@@ -48,6 +53,7 @@ public class QueryTransformationResult {
         this.transformedMergedFields = transformedMergedFields;
         this.referencedVariables = referencedVariables;
         this.fieldIdToTransformation = fieldIdToTransformation;
+        this.transformationToFieldId = transformationToFieldId;
         this.transformedFragments = transformedFragments;
         this.typeRenameMappings = typeRenameMappings;
         this.variableValues = variableValues;
@@ -74,6 +80,9 @@ public class QueryTransformationResult {
         return fieldIdToTransformation;
     }
 
+    public Map<FieldTransformation, String> getTransformationToFieldId() {
+        return transformationToFieldId;
+    }
     public Map<String, FragmentDefinition> getTransformedFragments() {
         return transformedFragments;
     }

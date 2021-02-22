@@ -1,7 +1,7 @@
 package graphql.nadel.engine.transformation;
 
 import graphql.Internal;
-import graphql.execution.ExecutionPath;
+import graphql.execution.ResultPath;
 import graphql.language.Field;
 import graphql.language.SelectionSet;
 import graphql.nadel.dsl.FieldMappingDefinition;
@@ -71,7 +71,7 @@ public class FieldRenameTransformation extends FieldTransformation {
         resultNode = mapToOverallFieldAndTypes(resultNode, allTransformations, matchingNormalizedOverallField);
         resultNode = replaceFieldsAndTypesInsideList(resultNode, allTransformations, matchingNormalizedOverallField);
         // the new path is the parent + the original result key
-        ExecutionPath mappedPath = environment.parentNode.getExecutionPath().segment(resultNode.getResultKey());
+        ResultPath mappedPath = environment.parentNode.getResultPath().segment(resultNode.getResultKey());
         resultNode = resultNode.transform(builder -> builder.executionPath(mappedPath));
 
         return new UnapplyResult(resultNode, TraversalControl.CONTINUE);

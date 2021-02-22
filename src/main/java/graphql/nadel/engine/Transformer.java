@@ -21,7 +21,9 @@ import graphql.language.VariableDefinition;
 import graphql.language.VariableReference;
 import graphql.nadel.Service;
 import graphql.nadel.dsl.ExtendedFieldDefinition;
+import graphql.nadel.dsl.FieldMappingDefinition;
 import graphql.nadel.dsl.TypeMappingDefinition;
+import graphql.nadel.dsl.UnderlyingServiceHydration;
 import graphql.nadel.engine.transformation.ApplyEnvironment;
 import graphql.nadel.engine.transformation.ApplyResult;
 import graphql.nadel.engine.transformation.FieldRenameTransformation;
@@ -34,6 +36,7 @@ import graphql.nadel.hooks.NewVariableValue;
 import graphql.nadel.hooks.ServiceExecutionHooks;
 import graphql.nadel.normalized.NormalizedQueryField;
 import graphql.nadel.normalized.NormalizedQueryFromAst;
+import graphql.nadel.schema.NadelDirectives;
 import graphql.nadel.util.FpKit;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLCompositeType;
@@ -54,7 +57,6 @@ import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
 import graphql.util.TreeTransformerUtil;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -79,6 +81,7 @@ public class Transformer extends NodeVisitorStub {
     final ExecutionContext executionContext;
     final GraphQLSchema underlyingSchema;
     final Map<String, FieldTransformation> fieldIdToTransformation;
+    final Map<FieldTransformation, String> transformationToFieldId;
     final Map<String, String> typeRenameMappings;
     final Set<String> referencedFragmentNames;
     final Map<String, VariableDefinition> referencedVariables;
@@ -96,6 +99,7 @@ public class Transformer extends NodeVisitorStub {
     public Transformer(ExecutionContext executionContext,
                        GraphQLSchema underlyingSchema,
                        Map<String, FieldTransformation> fieldIdToTransformation,
+                       Map<FieldTransformation, String> transformationToFieldId,
                        Map<String, String> typeRenameMappings,
                        Set<String> referencedFragmentNames,
                        Map<String, VariableDefinition> referencedVariables,
@@ -111,6 +115,7 @@ public class Transformer extends NodeVisitorStub {
         this.executionContext = executionContext;
         this.underlyingSchema = underlyingSchema;
         this.fieldIdToTransformation = fieldIdToTransformation;
+        this.transformationToFieldId = transformationToFieldId;
         this.typeRenameMappings = typeRenameMappings;
         this.referencedFragmentNames = referencedFragmentNames;
         this.referencedVariables = referencedVariables;
@@ -221,7 +226,7 @@ public class Transformer extends NodeVisitorStub {
             if (forbiddenFieldError == null) {
                 return false;
             }
-            transformationMetadata.add(Collections.singletonList(normalizedField), forbiddenFieldError);
+            transformationMetadata.removeField(normalizedField, forbiddenFieldError);
             return true;
         }).size();
 
@@ -243,7 +248,7 @@ public class Transformer extends NodeVisitorStub {
 
             String fieldId = FieldMetadataUtil.getUniqueRootFieldId(changedField, this.transformationMetadata.getMetadataByFieldId());
             fieldIdToTransformation.put(fieldId, transformation);
-
+            transformationToFieldId.put(transformation, getId(changedField));
             if (transformation instanceof FieldRenameTransformation) {
                 maybeAddUnderscoreTypeName(context, changedField, fieldTypeOverall);
             }
@@ -424,6 +429,17 @@ public class Transformer extends NodeVisitorStub {
 
 
     private FieldTransformation createTransformation(GraphQLFieldDefinition fieldDefinitionOverallSchema) {
+
+        UnderlyingServiceHydration hydration = NadelDirectives.createUnderlyingServiceHydration(fieldDefinitionOverallSchema);
+        if (hydration != null) {
+            return new HydrationTransformation(hydration);
+        }
+
+        FieldMappingDefinition mappingDefinition = NadelDirectives.createFieldMapping(fieldDefinitionOverallSchema);
+        if (mappingDefinition != null) {
+            return new FieldRenameTransformation(mappingDefinition);
+        }
+
         graphql.nadel.dsl.FieldTransformation definition = transformationDefinitionForField(fieldDefinitionOverallSchema.getDefinition());
 
         if (definition == null) {

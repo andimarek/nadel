@@ -1,17 +1,17 @@
 package graphql.nadel.util
 
-import graphql.execution.ExecutionPath
+import graphql.execution.ResultPath
 import spock.lang.Specification
 import spock.lang.Unroll
 
-class ExecutionPathUtilsTest extends Specification {
+class ResultPathUtilsTest extends Specification {
 
     @Unroll
     def "list ending paths"() {
         expect:
 
-        def ePath = ExecutionPath.parse(path)
-        ExecutionPathUtils.isListEndingPath(ePath) == expectedState
+        def ePath = ResultPath.parse(path)
+        ResultPathUtils.isListEndingPath(ePath) == expectedState
 
         where:
         path         | expectedState
@@ -27,8 +27,8 @@ class ExecutionPathUtilsTest extends Specification {
     def "remove ending paths"() {
         expect:
 
-        def ePath = ExecutionPath.parse(path)
-        ExecutionPathUtils.removeLastSegment(ePath).toString() == expectedState
+        def ePath = ResultPath.parse(path)
+        ResultPathUtils.removeLastSegment(ePath).toString() == expectedState
 
         where:
         path         | expectedState

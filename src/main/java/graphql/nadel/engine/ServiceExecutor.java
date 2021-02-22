@@ -47,13 +47,13 @@ public class ServiceExecutor {
     private final Logger logNotSafe = LogKit.getNotPrivacySafeLogger(ServiceExecutor.class);
 
     private final ServiceResultToResultNodes resultToResultNode = new ServiceResultToResultNodes();
+    private final NormalizedQueryFactory normalizedQueryFactory = new NormalizedQueryFactory();
 
     private final NadelInstrumentation instrumentation;
 
     public ServiceExecutor(NadelInstrumentation instrumentation) {
         this.instrumentation = instrumentation;
     }
-
 
     public CompletableFuture<RootExecutionResultNode> execute(ExecutionContext executionContext,
                                                               QueryTransformationResult queryTransformerResult,
@@ -72,7 +72,6 @@ public class ServiceExecutor {
 
         ExecutionStepInfo underlyingRootStepInfo = createRootExecutionStepInfo(service.getUnderlyingSchema(), operation);
 
-        NormalizedQueryFactory normalizedQueryFactory = new NormalizedQueryFactory();
         NormalizedQueryFromAst normalizedQuery = normalizedQueryFactory.createNormalizedQuery(underlyingSchema, serviceExecutionParameters.getQuery(),
                 null,
                 serviceExecutionParameters.getVariables());
@@ -81,7 +80,6 @@ public class ServiceExecutor {
         return result
                 .thenApply(data -> serviceExecutionResultToResultNode(executionContextForService, underlyingRootStepInfo, transformedMergedFields, data, normalizedQuery));
     }
-
 
     private CompletableFuture<Data> executeImpl(Service service, ServiceExecution serviceExecution, ServiceExecutionParameters serviceExecutionParameters, ExecutionStepInfo executionStepInfo, ExecutionContext executionContext) {
 
@@ -143,7 +141,6 @@ public class ServiceExecutor {
         return new ServiceExecutionResult(new LinkedHashMap<>(), singletonList(errorMap), Collections.emptyMap());
     }
 
-
     private ServiceExecutionParameters buildServiceExecutionParameters(ExecutionContext executionContext, QueryTransformationResult queryTransformerResult, Object serviceContext, boolean isHydrationCall) {
 
         // only pass down variables that are referenced in the transformed query
@@ -152,7 +149,7 @@ public class ServiceExecutor {
         // only pass down fragments that have been used by the query after it is transformed
         Map<String, FragmentDefinition> fragments = queryTransformerResult.getTransformedFragments();
 
-        NadelContext nadelContext = (NadelContext) executionContext.getContext();
+        NadelContext nadelContext = executionContext.getContext();
         Object callerSuppliedContext = nadelContext.getUserSuppliedContext();
 
         return newServiceExecutionParameters()
@@ -210,5 +207,4 @@ public class ServiceExecutor {
                 elapsedTime,
                 normalizedQuery);
     }
-
 }

@@ -2,8 +2,8 @@ package graphql.nadel.engine;
 
 import graphql.Assert;
 import graphql.Internal;
-import graphql.execution.ExecutionPath;
 import graphql.execution.ExecutionStepInfo;
+import graphql.execution.ResultPath;
 import graphql.nadel.Operation;
 import graphql.nadel.dsl.NodeId;
 import graphql.nadel.result.ExecutionResultNode;
@@ -34,13 +34,13 @@ import static graphql.util.FpKit.mapEntries;
 public class StrategyUtil {
 
     public static List<NodeMultiZipper<ExecutionResultNode>> groupNodesIntoBatchesByField(Collection<NodeZipper<ExecutionResultNode>> nodes, ExecutionResultNode root) {
-        Map<List<String>, List<NodeZipper<ExecutionResultNode>>> zipperByField = groupingBy(nodes,
+        Map<List<String>, ? extends List<NodeZipper<ExecutionResultNode>>> zipperByField = groupingBy(nodes,
                 (executionResultZipper -> executionResultZipper.getCurNode().getFieldIds()));
         return mapEntries(zipperByField, (key, value) -> new NodeMultiZipper<>(root, value, RESULT_NODE_ADAPTER));
     }
 
 
-    public static Set<NodeZipper<ExecutionResultNode>> getHydrationInputNodes(ExecutionResultNode roots) {
+    public static Set<NodeZipper<ExecutionResultNode>> getHydrationInputNodes(ExecutionResultNode roots, Set<ResultPath> hydrationInputPaths) {
         Comparator<NodeZipper<ExecutionResultNode>> comparator = (node1, node2) -> {
             if (node1 == node2) {
                 return 0;
@@ -62,13 +62,18 @@ public class StrategyUtil {
         Set<NodeZipper<ExecutionResultNode>> result = Collections.synchronizedSet(new TreeSet<>(comparator));
 
         Traverser<ExecutionResultNode> traverser = Traverser.depthFirst(ExecutionResultNode::getChildren);
+
         traverser.traverse(roots, new TraverserVisitorStub<ExecutionResultNode>() {
             @Override
             public TraversalControl enter(TraverserContext<ExecutionResultNode> context) {
                 if (context.thisNode() instanceof HydrationInputNode) {
                     result.add(new NodeZipper<>(context.thisNode(), context.getBreadcrumbs(), RESULT_NODE_ADAPTER));
                 }
-                return TraversalControl.CONTINUE;
+                if (hydrationInputPaths.contains(context.thisNode().getResultPath())) {
+                    return TraversalControl.CONTINUE;
+                } else {
+                    return TraversalControl.ABORT;
+                }
             }
 
         });
@@ -76,7 +81,7 @@ public class StrategyUtil {
     }
 
     public static ExecutionStepInfo createRootExecutionStepInfo(GraphQLSchema graphQLSchema, Operation operation) {
-        ExecutionStepInfo executionInfo = newExecutionStepInfo().type(operation.getRootType(graphQLSchema)).path(ExecutionPath.rootPath()).build();
+        ExecutionStepInfo executionInfo = newExecutionStepInfo().type(operation.getRootType(graphQLSchema)).path(ResultPath.rootPath()).build();
         return executionInfo;
     }
 
@@ -90,7 +95,7 @@ public class StrategyUtil {
 
     public static <T extends ExecutionResultNode> T copyFieldInformation(ExecutionResultNode from, T to) {
         return (T) to.transform(builder -> builder
-                .executionPath(from.getExecutionPath())
+                .executionPath(from.getResultPath())
                 .fieldIds(from.getFieldIds())
                 .alias(from.getAlias())
                 .objectType(from.getObjectType())

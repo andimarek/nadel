@@ -8,6 +8,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static graphql.Assert.assertNotNull;
+import static graphql.Assert.assertNull;
+
 @Internal
 public class NormalizedQueryFromAst {
 
@@ -42,5 +45,19 @@ public class NormalizedQueryFromAst {
     public List<String> getFieldIds(NormalizedQueryField normalizedQueryField) {
         MergedField mergedField = mergedFieldByNormalizedFields.get(normalizedQueryField);
         return NodeId.getIds(mergedField);
+    }
+
+    public NormalizedQueryField getTopLevelField(String topLevelFieldResultKey) {
+        NormalizedQueryField topLevelField = null;
+
+        for (NormalizedQueryField candidate : getTopLevelFields()) {
+            if (candidate.getResultKey().equals(topLevelFieldResultKey)) {
+                assertNull(topLevelField, () -> "Found more than one normalized top level field with the same name");
+                topLevelField = candidate;
+            }
+        }
+        assertNotNull(topLevelField, () -> "Could not find top level field");
+
+        return topLevelField;
     }
 }

@@ -76,7 +76,9 @@ class TestUtil {
         mapper.disable(SerializationFeature.WRITE_NULL_MAP_VALUES)
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL)
         mapper.setFilterProvider(filters)
-        return mapper.writeValueAsString(node)
+        def s = mapper.writeValueAsString(node)
+        println(s)
+        return s
     }
 
     static Map astAsMap(Node node) {
@@ -202,9 +204,15 @@ class TestUtil {
         }
     }
 
-    static GraphQLSchema schemaFromNdsl(String ndsl) {
-        def stitchingDsl = new NSDLParser().parseDSL(ndsl)
-        def defRegistries = stitchingDsl.serviceDefinitions.collect({ Util.buildServiceRegistry(it) })
+    static GraphQLSchema schemaFromNdsl(Map<String, String> serviceDSLs) {
+        def defRegistries = []
+        for (Map.Entry<String, String> e : serviceDSLs.entrySet()) {
+            def serviceName = e.getKey()
+            def stitchingDsl = new NSDLParser().parseDSL(e.getValue())
+            def serviceDefinition = Util.buildServiceDefinition(serviceName, stitchingDsl)
+            def definitionRegistry = Util.buildServiceRegistry(serviceDefinition)
+            defRegistries.add(definitionRegistry)
+        }
         return new OverallSchemaGenerator().buildOverallSchema(defRegistries, new DefinitionRegistry(), new NeverWiringFactory())
     }
 
@@ -345,7 +353,7 @@ class TestUtil {
                 .build()
         ExecutionHelper executionHelper = new ExecutionHelper()
         def executionData = executionHelper.createExecutionData(query, schema, ExecutionId.generate(), executionInput, null)
-        [executionData.executionContext, executionData.fieldSubSelection]
+        [executionData.executionContext, executionHelper.getFieldSubSelection(executionData.executionContext)]
     }
 
 

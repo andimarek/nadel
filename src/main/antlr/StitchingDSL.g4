@@ -1,12 +1,26 @@
 grammar StitchingDSL;
 import GraphqlSDL;
 
+@lexer::members {
+    public boolean isDigit(int c) {
+        return c >= '0' && c <= '9';
+    }
+    public boolean isNameStart(int c) {
+        return '_' == c ||
+          (c >= 'A' && c <= 'Z') ||
+          (c >= 'a' && c <= 'z');
+    }
+    public boolean isDot(int c) {
+        return '.' == c;
+    }
+}
+
 @header {
     package graphql.nadel.parser.antlr;
 }
 
 stitchingDSL:
-   commonDefinition? serviceDefinition+ ;
+   commonDefinition? | serviceDefinition? | (typeSystemDefinition | typeSystemExtension)* ;
 
 commonDefinition: 'common' '{' (typeSystemDefinition|typeSystemExtension)* '}';
 

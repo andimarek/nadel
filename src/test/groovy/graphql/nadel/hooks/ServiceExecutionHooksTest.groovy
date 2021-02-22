@@ -99,13 +99,13 @@ class ServiceExecutionHooksTest extends Specification {
         }
         """)
 
-        def overallSchema = TestUtil.schemaFromNdsl("""
+        def overallSchema = TestUtil.schemaFromNdsl([service1:"""
         service service1 {
             type Query {
                 foo(id: String): String
             }
         }
-        """)
+        """])
         def fooFieldDefinition = overallSchema.getQueryType().getFieldDefinition("foo")
 
         def service = new Service("service", underlyingSchema, service1Execution, serviceDefinition, definitionRegistry)
@@ -173,13 +173,13 @@ class ServiceExecutionHooksTest extends Specification {
         }
         """)
 
-        def overallSchema = TestUtil.schemaFromNdsl("""
+        def overallSchema = TestUtil.schemaFromNdsl([service1:"""
         service service1 {
             type Query {
                 foo(id: String): String
             }
         }
-        """)
+        """])
         def fooFieldDefinition = overallSchema.getQueryType().getFieldDefinition("foo")
 
         def service = new Service("service", underlyingSchema, service1Execution, serviceDefinition, definitionRegistry)
@@ -208,7 +208,7 @@ class ServiceExecutionHooksTest extends Specification {
         def expectedQuery = 'query nadel_2_service($variable:String) {foo(id:$variable)}'
 
         when:
-        nadelExecutionStrategy.execute(executionData.executionContext, executionData.fieldSubSelection, resultComplexityAggregator)
+        nadelExecutionStrategy.execute(executionData.executionContext, executionHelper.getFieldSubSelection(executionData.executionContext), resultComplexityAggregator)
 
 
         then:
@@ -232,13 +232,13 @@ class ServiceExecutionHooksTest extends Specification {
         }
         """)
 
-        def overallSchema = TestUtil.schemaFromNdsl("""
+        def overallSchema = TestUtil.schemaFromNdsl([service1:"""
         service service1 {
             type Query {
                 foo: String
             }
         }
-        """)
+        """])
         def fooFieldDefinition = overallSchema.getQueryType().getFieldDefinition("foo")
 
         def service = new Service("service", underlyingSchema, service1Execution, serviceDefinition, definitionRegistry)
@@ -285,7 +285,7 @@ class ServiceExecutionHooksTest extends Specification {
         def data = [foo: "hello world"]
 
         when:
-        def response = nadelExecutionStrategy.execute(executionData.executionContext, executionData.fieldSubSelection, resultComplexityAggregator)
+        def response = nadelExecutionStrategy.execute(executionData.executionContext, executionHelper.getFieldSubSelection(executionData.executionContext), resultComplexityAggregator)
 
 
         then:

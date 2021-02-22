@@ -16,7 +16,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture
 class NadelE2ERenameHydrationTest extends Specification {
 
     def 'mutation with nested renamed fields, field types and a hydration call'() {
-        def simpleNDSL = '''
+        def simpleNDSL = [IssuesService: '''
          service IssuesService {
             type Query {
                 findIssueOwner(id: ID): SpecificIssueOwner
@@ -39,7 +39,29 @@ class NadelE2ERenameHydrationTest extends Specification {
                 updateSpecificIssue: UpdateSpecificIssuePayload => renamed from updateIssue
             }
          }
-        '''
+        ''']
+
+        def directiveBaseNDSL = [IssuesService: '''
+            type Query {
+                findIssueOwner(id: ID): SpecificIssueOwner
+            }
+            
+            type SpecificIssueOwner @renamed(from : "IssueOwner") {
+                identity: String
+            }
+            
+            type SpecificIssue @renamed(from : "Issue")  {
+                id: ID
+                name: SpecificIssueOwner @hydrated(service: "IssuesService" field: "findIssueOwner" arguments : [{ name : "id" value : "$source.id"}] )
+            }
+
+            type UpdateSpecificIssuePayload @renamed(from : "UpdateIssuePayload") {
+                specificIssue: SpecificIssue @renamed(from : "issue")
+            }
+            type Mutation {
+                updateSpecificIssue: UpdateSpecificIssuePayload @renamed(from : "updateIssue")
+            }
+        ''']
 
         def underlyingSchema = typeDefinitions('''
             type Query {
@@ -84,6 +106,12 @@ class NadelE2ERenameHydrationTest extends Specification {
                 .dsl(simpleNDSL)
                 .serviceExecutionFactory(serviceFactory)
                 .build()
+
+        Nadel directiveBasedNadel = newNadel()
+                .dsl(directiveBaseNDSL)
+                .serviceExecutionFactory(serviceFactory)
+                .build()
+
         NadelExecutionInput nadelExecutionInput = newNadelExecutionInput()
                 .query(query)
                 .build()
@@ -105,6 +133,19 @@ class NadelE2ERenameHydrationTest extends Specification {
                 completedFuture(hydrationResult)
 
         result.join().data == [updateSpecificIssue: [specificIssue: [name: [identity: "Luna"]]]]
+
+
+        when:
+        result = directiveBasedNadel.execute(nadelExecutionInput)
+
+        then:
+        1 * delegatedExecution.execute(_) >>
+                completedFuture(topLevelResult)
+        1 * delegatedExecution.execute(_) >>
+                completedFuture(hydrationResult)
+
+        result.join().data == [updateSpecificIssue: [specificIssue: [name: [identity: "Luna"]]]]
+
     }
 
 }

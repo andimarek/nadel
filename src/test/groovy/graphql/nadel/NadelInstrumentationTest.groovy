@@ -26,7 +26,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture
 
 class NadelInstrumentationTest extends Specification {
 
-    def simpleNDSL = """
+    def simpleNDSL = [MyService : """
          service MyService {
             type Query{
                 hello: World  
@@ -39,7 +39,7 @@ class NadelInstrumentationTest extends Specification {
                 hello: String  
             } 
          }
-        """
+        """]
 
     def simpleUnderlyingSchema = typeDefinitions("""
             type Query{

@@ -133,7 +133,7 @@ class NadelRenameTest extends Specification {
     }
 
     def nadel = newNadel()
-            .dsl(simpleNDSL)
+            .dsl("MyService", simpleNDSL)
             .serviceExecutionFactory(serviceFactory)
             .serviceExecutionHooks(traversingExecutionHooks)
             .build()

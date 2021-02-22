@@ -1,8 +1,9 @@
 package graphql.nadel.engine;
 
 import graphql.Internal;
-import graphql.execution.ExecutionPath;
+import graphql.execution.ResultPath;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Internal
@@ -41,13 +42,13 @@ public class PathMapper {
      * @param environment   context for the current path
      * @return the fixed path as described above
      */
-    public ExecutionPath mapPath(ExecutionPath executionPath, String resultKey, UnapplyEnvironment environment) {
-        List<Object> pathSegments = environment.parentNode.getExecutionPath().toList();
+    public ResultPath mapPath(ResultPath executionPath, String resultKey, UnapplyEnvironment environment) {
+        List<Object> pathSegments = new ArrayList<>(environment.parentNode.getResultPath().toList());
         // Add the trailing segment from the child path to the parent path
         pathSegments.add(executionPath.getSegmentValue());
 
         patchLastFieldName(pathSegments, resultKey);
-        return ExecutionPath.fromList(pathSegments);
+        return ResultPath.fromList(pathSegments);
     }
 
     private void patchLastFieldName(List<Object> pathSegments, String resultKey) {

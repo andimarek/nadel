@@ -1,40 +1,38 @@
 {
-  "serviceDefinitions": [
-    {
-      "name": "FooService",
-      "typeDefinitions": [
-        {
-          "name": "Query",
-          "fieldDefinitions": [
-            {
-              "name": "foo",
-              "type": {
-                "name": "Foo"
-              }
+  "serviceDefinition": {
+    "name": "FooService",
+    "typeDefinitions": [
+      {
+        "name": "Query",
+        "fieldDefinitions": [
+          {
+            "name": "foo",
+            "type": {
+              "name": "Foo"
             }
-          ]
-        },
-        {
-          "name": "FooUnion",
-          "directives": [
-            {
-              "name": "directiveFirst"
-            }
-          ],
-          "memberTypes": [
-            {
-              "name": "Photo"
-            },
-            {
-              "name": "Person"
-            }
-          ],
-          "typeMappingDefinition": {
-            "underlyingName": "UnderlyingFooName",
-            "overallName": "FooUnion"
           }
+        ]
+      },
+      {
+        "name": "FooUnion",
+        "directives": [
+          {
+            "name": "directiveFirst"
+          }
+        ],
+        "memberTypes": [
+          {
+            "name": "Photo"
+          },
+          {
+            "name": "Person"
+          }
+        ],
+        "typeMappingDefinition": {
+          "underlyingName": "UnderlyingFooName",
+          "overallName": "FooUnion"
         }
-      ]
-    }
-  ]
+      }
+    ]
+  }
 }

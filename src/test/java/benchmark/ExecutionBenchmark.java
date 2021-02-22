@@ -73,7 +73,7 @@ public class ExecutionBenchmark {
                 }
             };
             String nsdl = "service activity{" + schemaString + "}";
-            nadel = Nadel.newNadel().dsl(nsdl).serviceExecutionFactory(serviceExecutionFactory).build();
+            nadel = Nadel.newNadel().dsl("activity", nsdl).serviceExecutionFactory(serviceExecutionFactory).build();
             query = readFromClasspath("large_response_benchmark_query.graphql");
             benchmarkContext = new BenchmarkContext();
             NadelExecutionInput nadelExecutionInput = NadelExecutionInput.newNadelExecutionInput()

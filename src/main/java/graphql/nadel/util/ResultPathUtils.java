@@ -1,12 +1,12 @@
 package graphql.nadel.util;
 
 import graphql.Internal;
-import graphql.execution.ExecutionPath;
+import graphql.execution.ResultPath;
 
 import java.util.List;
 
 @Internal
-public class ExecutionPathUtils {
+public class ResultPathUtils {
 
     /**
      * Returns true if the path ends with an integer segment eg /a/b[0]
@@ -16,7 +16,7 @@ public class ExecutionPathUtils {
      * @return true if its a list ending path
      */
     @SuppressWarnings("RedundantIfStatement")
-    public static boolean isListEndingPath(ExecutionPath path) {
+    public static boolean isListEndingPath(ResultPath path) {
         List<Object> segments = path.toList();
         if (segments.isEmpty()) {
             return false;
@@ -27,12 +27,12 @@ public class ExecutionPathUtils {
         return true;
     }
 
-    public static ExecutionPath removeLastSegment(ExecutionPath path) {
+    public static ResultPath removeLastSegment(ResultPath path) {
         List<Object> segments = path.toList();
         if (segments.isEmpty()) {
             return path;
         }
         segments = segments.subList(0, segments.size() - 1);
-        return ExecutionPath.fromList(segments);
+        return ResultPath.fromList(segments);
     }
 }

@@ -5,7 +5,7 @@ import graphql.ExecutionResult;
 import graphql.ExecutionResultImpl;
 import graphql.GraphQLError;
 import graphql.Internal;
-import graphql.execution.ExecutionPath;
+import graphql.execution.ResultPath;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLNonNull;
@@ -97,7 +97,7 @@ public class ResultNodesUtil {
     private static ExecutionResultData toDataImpl(final ExecutionResultNode root) {
 
         if (root instanceof UnresolvedObjectResultNode) {
-            return data("Not resolved : " + root.getExecutionPath() + " with field " + root.getFieldName(), emptyList());
+            return data("Not resolved : " + root.getResultPath() + " with field " + root.getFieldName(), emptyList());
         }
 
         if (root instanceof LeafExecutionResultNode) {
@@ -120,7 +120,7 @@ public class ResultNodesUtil {
             isNonNull = true;
         }
         if (root.getFieldDefinition() != null) {
-            actualType = getActualType(root.getFieldDefinition(), root.getExecutionPath());
+            actualType = getActualType(root.getFieldDefinition(), root.getResultPath());
             isNonNull = GraphQLTypeUtil.isNonNull(actualType);
         }
 
@@ -131,9 +131,9 @@ public class ResultNodesUtil {
             ExecutionResultData executionResultData = toDataImpl(child);
             if (isNonNull && (child.getNonNullableFieldWasNullError() != null || executionResultData.nonNullableFieldWasNullError != null)) {
                 if (actualType != null) {
-                    return data(new NonNullableFieldWasNullError((GraphQLNonNull) actualType, root.getExecutionPath()));
+                    return data(new NonNullableFieldWasNullError((GraphQLNonNull) actualType, root.getResultPath()));
                 } else {
-                    return data(new NonNullableFieldWasNullError((GraphQLNonNull) child.getFieldDefinition().getType(), root.getExecutionPath()));
+                    return data(new NonNullableFieldWasNullError((GraphQLNonNull) child.getFieldDefinition().getType(), root.getResultPath()));
                 }
             } else if (executionResultData.nonNullableFieldWasNullError != null) {
                 return data(null, singletonList(executionResultData.nonNullableFieldWasNullError), extensions);
@@ -150,7 +150,7 @@ public class ResultNodesUtil {
         boolean isNonNull = false;
         GraphQLOutputType actualType = null;
         if (root.getFieldDefinition() != null) {
-            actualType = getActualType(root.getFieldDefinition(), root.getExecutionPath());
+            actualType = getActualType(root.getFieldDefinition(), root.getResultPath());
             isNonNull = GraphQLTypeUtil.isNonNull(actualType);
         }
 
@@ -160,7 +160,7 @@ public class ResultNodesUtil {
 
             ExecutionResultData executionResultData = toDataImpl(child);
             if (isNonNull && (child.getNonNullableFieldWasNullError() != null || executionResultData.nonNullableFieldWasNullError != null)) {
-                return data(new NonNullableFieldWasNullError((GraphQLNonNull) actualType, root.getExecutionPath()));
+                return data(new NonNullableFieldWasNullError((GraphQLNonNull) actualType, root.getResultPath()));
             } else if (executionResultData.nonNullableFieldWasNullError != null) {
                 return data(null, singletonList(executionResultData.nonNullableFieldWasNullError));
             }
@@ -172,7 +172,7 @@ public class ResultNodesUtil {
     }
 
 
-    private static GraphQLOutputType getActualType(GraphQLFieldDefinition fieldDefinition, ExecutionPath executionPath) {
+    private static GraphQLOutputType getActualType(GraphQLFieldDefinition fieldDefinition, ResultPath executionPath) {
         // example: field definition type: [[String]!]!, path: /foo/bar/type[3] => result is [String]!
         GraphQLOutputType result = fieldDefinition.getType();
         while (executionPath.isListSegment()) {

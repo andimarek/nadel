@@ -1,34 +1,32 @@
 {
-  "serviceDefinitions": [
-    {
-      "name": "Foo",
-      "typeDefinitions": [
-        {
-          "name": "Query",
-          "fieldDefinitions": [
-            {
-              "name": "hello",
-              "type": {
-                "name": "String"
-              },
-              "inputValueDefinitions": [
-                {
-                  "name": "arg1",
-                  "type": {
-                    "name": "String"
-                  }
-                },
-                {
-                  "name": "arg2",
-                  "type": {
-                    "name": "Integer"
-                  }
+  "serviceDefinition": {
+    "name": "Foo",
+    "typeDefinitions": [
+      {
+        "name": "Query",
+        "fieldDefinitions": [
+          {
+            "name": "hello",
+            "type": {
+              "name": "String"
+            },
+            "inputValueDefinitions": [
+              {
+                "name": "arg1",
+                "type": {
+                  "name": "String"
                 }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
+              },
+              {
+                "name": "arg2",
+                "type": {
+                  "name": "Integer"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
 }

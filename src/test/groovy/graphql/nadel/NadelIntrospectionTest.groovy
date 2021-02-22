@@ -44,7 +44,7 @@ class NadelIntrospectionTest extends Specification {
 
     def buildNadel() {
         newNadel()
-                .dsl(simpleNDSL)
+                .dsl("MyService", simpleNDSL)
                 .introspectionRunner(new DefaultIntrospectionRunner())
                 .serviceExecutionFactory(serviceFactory)
                 .build()

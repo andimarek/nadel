@@ -110,7 +110,7 @@ type ActivityUser {
 """
         def underlyingSchema = TestUtil.schema(schema)
 
-        def overallSchema = TestUtil.schemaFromNdsl("service activity { $schema }")
+        def overallSchema = TestUtil.schemaFromNdsl([activity: "service activity { $schema }"])
         def myActivitiesFieldDefinition = overallSchema.getQueryType().getFieldDefinition("myActivities")
 
         def service1 = new Service("activity", underlyingSchema, service1Execution, serviceDefinition, definitionRegistry)
@@ -186,7 +186,7 @@ type ActivityUser {
         when:
         long time = System.currentTimeMillis();
         def response
-        response = nadelExecutionStrategy.execute(executionData.executionContext, executionData.fieldSubSelection, resultComplexityAggregator)
+        response = nadelExecutionStrategy.execute(executionData.executionContext, executionHelper.getFieldSubSelection(executionData.executionContext), resultComplexityAggregator)
 
 
         def data = resultData(response)

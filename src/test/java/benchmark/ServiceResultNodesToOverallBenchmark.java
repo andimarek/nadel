@@ -74,7 +74,7 @@ public class ServiceResultNodesToOverallBenchmark {
                 }
             };
             String nsdl = "service activity{" + schemaString + "}";
-            nadel = Nadel.newNadel().dsl(nsdl).serviceExecutionFactory(serviceExecutionFactory).build();
+            nadel = Nadel.newNadel().dsl("activity", nsdl).serviceExecutionFactory(serviceExecutionFactory).build();
             query = readFromClasspath("large_response_benchmark_query.graphql");
             benchmarkContext = new BenchmarkContext();
             NadelExecutionInput nadelExecutionInput = NadelExecutionInput.newNadelExecutionInput()
@@ -107,9 +107,11 @@ public class ServiceResultNodesToOverallBenchmark {
                 args.overallSchema,
                 args.correctRootNode,
                 args.fieldIdToTransformation,
+                args.transformationToFieldId,
                 args.typeRenameMappings,
                 args.nadelContext,
-                args.transformationMetadata);
+                args.transformationMetadata,
+                args.hydrationInputPaths);
         return result;
     }
 

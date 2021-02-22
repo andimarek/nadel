@@ -14,7 +14,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture
 
 class NadelErrorHandlingTest extends Specification {
 
-    def simpleNDSL = """
+    def simpleNDSL = [MyService: """
          service MyService {
             type Query{
                 hello: World  
@@ -28,7 +28,7 @@ class NadelErrorHandlingTest extends Specification {
                 hello: String  
             } 
          }
-        """
+        """]
 
     def simpleUnderlyingSchema = typeDefinitions("""
             type Query{
@@ -125,26 +125,29 @@ class NadelErrorHandlingTest extends Specification {
         er.errors[0].message.contains("Variable 'var1' has coerced Null value")
     }
 
-    def hydratedNDSL = '''
-         service Foo {
-            type Query{
-                foo: Foo  
-            } 
-            type Foo {
-                name: String
-                bar: Bar => hydrated from Bar.barById(id: $source.barId)
-            }
-         }
-         service Bar {
-            type Query{
-                bar: Bar 
-            } 
-            type Bar {
-                name: String 
-                nestedBar: Bar => hydrated from Bar.barById(id: $source.nestedBarId)
-            }
-         }
-        '''
+    def hydratedNDSL = [
+            Foo: '''
+                     service Foo {
+                        type Query{
+                            foo: Foo  
+                        } 
+                        type Foo {
+                            name: String
+                            bar: Bar => hydrated from Bar.barById(id: $source.barId)
+                        }
+                     }
+            ''',
+            Bar: '''
+                     service Bar {
+                        type Query{
+                            bar: Bar 
+                        } 
+                        type Bar {
+                            name: String 
+                            nestedBar: Bar => hydrated from Bar.barById(id: $source.nestedBarId)
+                        }
+                    }
+            ''']
     def hydratedUnderlyingSchema1 = typeDefinitions('''
             type Query{
                 foo: Foo  

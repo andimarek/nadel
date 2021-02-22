@@ -43,7 +43,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture
 
 class NadelE2ETest extends Specification {
 
-    def simpleNDSL = '''
+    def simpleNDSL = [MyService: '''
          service MyService {
             type Query {
                 hello: World
@@ -56,7 +56,7 @@ class NadelE2ETest extends Specification {
                 hello: String  
             }
          }
-        '''
+        ''']
 
     def simpleUnderlyingSchema = typeDefinitions('''
             type Query {
@@ -134,7 +134,8 @@ class NadelE2ETest extends Specification {
 
     def "query to two services with field rename"() {
 
-        def nsdl = '''
+        def nsdl = [
+                Foo: '''
          service Foo {
             type Query{
                 foo: Foo  => renamed from fooOriginal 
@@ -143,6 +144,8 @@ class NadelE2ETest extends Specification {
                 name: String
             }
          }
+         ''',
+                Bar: '''
          service Bar {
             type Query{
                 bar: Bar 
@@ -151,7 +154,7 @@ class NadelE2ETest extends Specification {
                 name: String => renamed from title
             }
          }
-        '''
+        ''']
         def query = '''
         { otherFoo: foo {name} bar{name}}
         '''
@@ -190,8 +193,8 @@ class NadelE2ETest extends Specification {
                 .build()
         def data1 = [otherFoo: [name: "Foo"]]
         def data2 = [bar: [title: "Bar"]]
-        ServiceExecutionResult delegatedExecutionResult1 = new ServiceExecutionResult(data1, [], [ext1 : "val1", merged : "m1"])
-        ServiceExecutionResult delegatedExecutionResult2 = new ServiceExecutionResult(data2, [], [ext2 : "val2", merged : "m2"])
+        ServiceExecutionResult delegatedExecutionResult1 = new ServiceExecutionResult(data1, [], [ext1: "val1", merged: "m1"])
+        ServiceExecutionResult delegatedExecutionResult2 = new ServiceExecutionResult(data2, [], [ext2: "val2", merged: "m2"])
         when:
         def result = nadel.execute(nadelExecutionInput)
 
@@ -211,7 +214,8 @@ class NadelE2ETest extends Specification {
 
     def "query with three nested hydrations"() {
 
-        def nsdl = '''
+        def nsdl = [
+                Foo: '''
          service Foo {
             type Query{
                 foos: [Foo]  
@@ -221,6 +225,8 @@ class NadelE2ETest extends Specification {
                 bar: Bar => hydrated from Bar.barsById(id: $source.barId) object identified by barId, batch size 2
             }
          }
+         ''',
+                Bar: '''
          service Bar {
             type Query{
                 bar: Bar 
@@ -231,7 +237,7 @@ class NadelE2ETest extends Specification {
                 nestedBar: Bar => hydrated from Bar.barsById(id: $source.nestedBarId) object identified by barId
             }
          }
-        '''
+        ''']
         def underlyingSchema1 = typeDefinitions('''
             type Query{
                 foos: [Foo]  
@@ -314,7 +320,8 @@ class NadelE2ETest extends Specification {
 
     def "query with three nested hydrations and simple data"() {
 
-        def nsdl = '''
+        def nsdl = [
+                Foo: '''
          service Foo {
             type Query{
                 foos: [Foo]  
@@ -324,6 +331,8 @@ class NadelE2ETest extends Specification {
                 bar: Bar => hydrated from Bar.barsById(id: $source.barId) object identified by barId, batch size 2
             }
          }
+         ''',
+                Bar: '''
          service Bar {
             type Query{
                 bar: Bar 
@@ -334,7 +343,7 @@ class NadelE2ETest extends Specification {
                 nestedBar: Bar => hydrated from Bar.barsById(id: $source.nestedBarId) object identified by barId
             }
          }
-        '''
+        ''']
         def underlyingSchema1 = typeDefinitions('''
             type Query{
                 foos: [Foo]  
@@ -437,12 +446,15 @@ class NadelE2ETest extends Specification {
 
     def "can declare common types"() {
 
-        def nsdl = '''
+        def nsdl = [
+                common      : '''
          common {
             interface Node {
                 id: ID!
             }
          }
+         ''',
+                IssueService: '''     
          service IssueService {
             type Query{
                 node: Node
@@ -452,7 +464,7 @@ class NadelE2ETest extends Specification {
                 name: String
             }
          }
-        '''
+        ''']
         def query = '''
         { node { ...on Issue { name } } }
         '''
@@ -496,7 +508,7 @@ class NadelE2ETest extends Specification {
 
     def "deep rename works"() {
 
-        def nsdl = '''
+        def nsdl = [IssueService: '''
          service IssueService {
             type Query{
                 issue: Issue
@@ -505,7 +517,7 @@ class NadelE2ETest extends Specification {
                 name: String => renamed from detail.detailName
             }
          }
-        '''
+        ''']
         def underlyingSchema = typeDefinitions('''
             type Query{
                 issue: Issue 
@@ -672,7 +684,8 @@ class NadelE2ETest extends Specification {
     }
 
     def "extending types from another service is possible"() {
-        def ndsl = '''
+        def ndsl = [
+                Service1: '''
          service Service1 {
             extend type Query{
                 root: Root  
@@ -687,6 +700,8 @@ class NadelE2ETest extends Specification {
                 name: String
             }
          }
+         ''',
+                Service2: '''
          service Service2 {
             extend type Root {
                 extension: Extension => hydrated from Service2.lookup(id: $source.id) object identified by id 
@@ -696,7 +711,7 @@ class NadelE2ETest extends Specification {
                 name: String
             }
          }
-        '''
+        ''']
         def underlyingSchema1 = typeDefinitions('''
             type Query{
                 root: Root  
@@ -802,7 +817,8 @@ class NadelE2ETest extends Specification {
     }
 
     def "makes timing metrics available"() {
-        def nsdl = '''
+        def nsdl = [
+                service1: '''
          service service1 {
             type Query {
                 foo: Foo
@@ -812,6 +828,8 @@ class NadelE2ETest extends Specification {
                 bar: Bar => hydrated from service2.barById(id: $source.barId)
             }
         }
+        ''',
+                service2: '''
         service service2 {
             type Query {
                 barById(id: ID): Bar
@@ -821,7 +839,7 @@ class NadelE2ETest extends Specification {
                 name: String
             }
         }
-        '''
+        ''']
         def underlyingSchema1 = typeDefinitions("""
         type Query {
             foo : Foo
@@ -994,7 +1012,7 @@ class NadelE2ETest extends Specification {
 
     def "object type from underlying schema is removed"() {
 
-        def simpleNDSL = '''
+        def simpleNDSL = [MyService: '''
          service MyService {
             type Query {
                 hello: World
@@ -1010,7 +1028,7 @@ class NadelE2ETest extends Specification {
                 name: String
             }
          }
-        '''
+        ''']
 
         def underlyingSchemaChanged = typeDefinitions('''
             type Query{
@@ -1051,7 +1069,6 @@ class NadelE2ETest extends Specification {
         e.cause.message == "Schema mismatch: The underlying schema is missing required interface type Mars"
 
     }
-
 
 
 }

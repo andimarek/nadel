@@ -58,13 +58,17 @@ public class OverallSchemaGenerator {
             }
         });
 
+        // add our custom directives
+        overallRegistry.add(NadelDirectives.NADEL_HYDRATION_ARGUMENT_DEFINITION);
+        overallRegistry.add(NadelDirectives.HYDRATED_DIRECTIVE_DEFINITION);
+        overallRegistry.add(NadelDirectives.RENAMED_DIRECTIVE_DEFINITION);
+
         for (SDLDefinition<?> definition : allDefinitions) {
             Optional<GraphQLError> error = overallRegistry.add(definition);
             if (error.isPresent()) {
                 throw new GraphQLException("Unable to add definition to overall registry: " + error.get().getMessage());
             }
         }
-
         return overallRegistry;
     }
 

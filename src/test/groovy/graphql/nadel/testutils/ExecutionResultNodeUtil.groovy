@@ -1,7 +1,7 @@
 package graphql.nadel.testutils
 
 
-import graphql.execution.ExecutionPath
+import graphql.execution.ResultPath
 import graphql.execution.ExecutionStepInfo
 import graphql.execution.nextgen.result.ResolvedValue
 import graphql.nadel.result.ExecutionResultNode
@@ -36,12 +36,12 @@ class ExecutionResultNodeUtil {
 
     static ExecutionStepInfo esi(String pathName, String alias) {
         if (pathName == null || pathName.isAllWhitespace()) {
-            return newExecutionStepInfo().type(GraphQLString).path(ExecutionPath.rootPath()).build()
+            return newExecutionStepInfo().type(GraphQLString).path(ResultPath.rootPath()).build()
         }
         if (!pathName.contains("/")) {
             pathName = "/" + pathName
         }
-        def path = ExecutionPath.parse(pathName)
+        def path = ResultPath.parse(pathName)
         def fieldName = path.getSegmentName()
 
         def field = newMergedField(newField(fieldName).alias(alias).build()).build()

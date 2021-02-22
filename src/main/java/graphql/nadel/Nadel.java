@@ -31,6 +31,7 @@ import graphql.nadel.schema.OverallSchemaGenerator;
 import graphql.nadel.schema.SchemaTransformationHook;
 import graphql.nadel.schema.UnderlyingSchemaGenerator;
 import graphql.nadel.util.LogKit;
+import graphql.nadel.util.Util;
 import graphql.parser.InvalidSyntaxException;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.ScalarInfo;
@@ -44,7 +45,9 @@ import org.slf4j.LoggerFactory;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -61,9 +64,8 @@ public class Nadel {
     private static final Logger logNotSafe = LogKit.getNotPrivacySafeLogger(Nadel.class);
     private static final Logger log = LoggerFactory.getLogger(Nadel.class);
 
-    private final StitchingDsl stitchingDsl;
+    private final Map<String, StitchingDsl> stitchingDsls;
     private final ServiceExecutionFactory serviceExecutionFactory;
-    private final NSDLParser NSDLParser = new NSDLParser();
     private final List<Service> services;
     private final GraphQLSchema overallSchema;
     private final NadelInstrumentation instrumentation;
@@ -77,7 +79,7 @@ public class Nadel {
     private final SchemaTransformationHook schemaTransformationHook;
     private final OverallSchemaGenerator overallSchemaGenerator = new OverallSchemaGenerator();
 
-    private Nadel(Reader nsdl,
+    private Nadel(Map<String, Reader> serviceNDSLs,
                   ServiceExecutionFactory serviceExecutionFactory,
                   NadelInstrumentation instrumentation,
                   PreparsedDocumentProvider preparsedDocumentProvider,
@@ -94,28 +96,44 @@ public class Nadel {
         this.executionIdProvider = executionIdProvider;
         this.schemaTransformationHook = schemaTransformationHook;
 
-        this.stitchingDsl = this.NSDLParser.parseDSL(nsdl);
         this.introspectionRunner = introspectionRunner;
         this.overallWiringFactory = overallWiringFactory;
         this.underlyingWiringFactory = underlyingWiringFactory;
+        this.stitchingDsls = createDSLs(serviceNDSLs);
         this.services = createServices();
         this.commonTypes = createCommonTypes();
         this.overallSchema = createOverallSchema();
     }
 
+    private Map<String, StitchingDsl> createDSLs(Map<String, Reader> serviceNDSLs) {
+        NSDLParser nadelParser = new NSDLParser();
+        Map<String, StitchingDsl> mapOfDSLs = new LinkedHashMap<>();
+        for (Map.Entry<String, Reader> e : serviceNDSLs.entrySet()) {
+            StitchingDsl stitchingDsl = nadelParser.parseDSL(e.getValue());
+            mapOfDSLs.put(e.getKey(), stitchingDsl);
+        }
+        return mapOfDSLs;
+    }
+
     private DefinitionRegistry createCommonTypes() {
-        CommonDefinition commonDefinition = stitchingDsl.getCommonDefinition();
-        return buildServiceRegistry(commonDefinition);
+        List<CommonDefinition> commonDefinitions = stitchingDsls.values().stream()
+                .filter(dsl -> dsl.getCommonDefinition() != null)
+                .map(StitchingDsl::getCommonDefinition)
+                .collect(toList());
+        return buildServiceRegistry(commonDefinitions);
     }
 
     private List<Service> createServices() {
-        List<ServiceDefinition> serviceDefinitions = stitchingDsl.getServiceDefinitions();
-
+        List<Service> serviceList = new ArrayList<>();
         UnderlyingSchemaGenerator underlyingSchemaGenerator = new UnderlyingSchemaGenerator();
 
-        List<Service> serviceList = new ArrayList<>();
-        for (ServiceDefinition serviceDefinition : serviceDefinitions) {
-            String serviceName = serviceDefinition.getName();
+        for (Map.Entry<String, StitchingDsl> e : stitchingDsls.entrySet()) {
+            String serviceName = e.getKey();
+            StitchingDsl stitchingDsl = e.getValue();
+            if (stitchingDsl.getCommonDefinition() != null) {
+                continue;
+            }
+            ServiceDefinition serviceDefinition = Util.buildServiceDefinition(serviceName, stitchingDsl);
             ServiceExecution serviceExecution = this.serviceExecutionFactory.getServiceExecution(serviceName);
             TypeDefinitionRegistry underlyingTypeDefinitions = this.serviceExecutionFactory.getUnderlyingTypeDefinitions(serviceName);
 
@@ -126,7 +144,6 @@ public class Nadel {
             Service service = new Service(serviceName, underlyingSchema, serviceExecution, serviceDefinition, definitionRegistry);
             serviceList.add(service);
         }
-
         return serviceList;
 
     }
@@ -315,7 +332,7 @@ public class Nadel {
     }
 
     public static class Builder {
-        private Reader nsdl;
+        private final Map<String, Reader> serviceNDSLs = new LinkedHashMap<>();
         private ServiceExecutionFactory serviceExecutionFactory;
         private NadelInstrumentation instrumentation = new NadelInstrumentation() {
         };
@@ -329,13 +346,30 @@ public class Nadel {
         private SchemaTransformationHook schemaTransformationHook = SchemaTransformationHook.IDENTITY;
 
 
-        public Builder dsl(Reader nsdl) {
-            this.nsdl = requireNonNull(nsdl);
+        public Builder dsl(String serviceName, Reader nsdl) {
+            requireNonNull(nsdl);
+            this.serviceNDSLs.put(serviceName, nsdl);
             return this;
         }
 
-        public Builder dsl(String nsdl) {
-            return dsl(new StringReader(requireNonNull(nsdl)));
+        public Builder dsl(String serviceName, String nsdl) {
+            return dsl(serviceName, new StringReader(requireNonNull(nsdl)));
+        }
+
+        public Builder dsl(Map<String, String> serviceDSLs) {
+            requireNonNull(serviceDSLs);
+
+            Map<String, Reader> readerServiceDSLs = new LinkedHashMap<>();
+            serviceDSLs.forEach((k, v) -> readerServiceDSLs.put(k, new StringReader(v)));
+
+            return serviceDSLs(readerServiceDSLs);
+        }
+
+        public Builder serviceDSLs(Map<String, Reader> serviceDSLs) {
+            requireNonNull(serviceDSLs);
+            this.serviceNDSLs.clear();
+            this.serviceNDSLs.putAll(serviceDSLs);
+            return this;
         }
 
         public Builder serviceExecutionFactory(ServiceExecutionFactory serviceExecutionFactory) {
@@ -385,7 +419,7 @@ public class Nadel {
 
         public Nadel build() {
             return new Nadel(
-                    nsdl,
+                    serviceNDSLs,
                     serviceExecutionFactory,
                     instrumentation,
                     preparsedDocumentProvider,

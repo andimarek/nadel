@@ -36,10 +36,8 @@ public class TransformationMetadata {
         }
     }
 
-    public void add(List<NormalizedQueryField> fields, GraphQLError error) {
-        for (NormalizedQueryField field : fields) {
-            removedFields.add(new NormalizedFieldAndError(field, error));
-        }
+    public void removeField(NormalizedQueryField field, GraphQLError error) {
+        removedFields.add(new NormalizedFieldAndError(field, error));
     }
 
     public List<NormalizedFieldAndError> getRemovedFieldsForParent(NormalizedQueryField parent) {
@@ -69,6 +67,5 @@ public class TransformationMetadata {
     public Map<String, List<FieldMetadata>> getMetadataByFieldId() {
         return metadataByFieldId;
     }
-
 }
 

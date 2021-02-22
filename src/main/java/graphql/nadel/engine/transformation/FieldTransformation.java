@@ -2,7 +2,7 @@ package graphql.nadel.engine.transformation;
 
 import graphql.Assert;
 import graphql.Internal;
-import graphql.execution.ExecutionPath;
+import graphql.execution.ResultPath;
 import graphql.language.AbstractNode;
 import graphql.language.Field;
 import graphql.nadel.dsl.NodeId;
@@ -76,7 +76,7 @@ public abstract class FieldTransformation {
             Assert.assertTrue(normalizedFields.size() == 1, () -> "only one normalized field expected");
             return normalizedFields.get(0);
         }
-        ExecutionPath path = parent.getExecutionPath();
+        ResultPath path = parent.getResultPath();
         List<String> parentQueryPath = executionPathToQueryPath(path);
 
         for (NormalizedQueryField normalizedField : normalizedFields) {
@@ -93,7 +93,7 @@ public abstract class FieldTransformation {
         return assertShouldNeverHappen("could not find matching normalized field for parent node %s ", parent);
     }
 
-    private static List<String> executionPathToQueryPath(ExecutionPath executionPath) {
+    private static List<String> executionPathToQueryPath(ResultPath executionPath) {
         return executionPath.toList()
                 .stream()
                 .filter(o -> o instanceof String)

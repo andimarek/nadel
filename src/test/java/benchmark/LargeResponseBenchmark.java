@@ -34,9 +34,9 @@ import java.util.concurrent.TimeUnit;
 /**
  * See http://hg.openjdk.java.net/code-tools/jmh/file/tip/jmh-samples/src/main/java/org/openjdk/jmh/samples/ for more samples
  * on what you can do with JMH
- *
+ * <p>
  * You MUST have the JMH plugin for IDEA in place for this to work :  https://github.com/artyushov/idea-jmh-plugin
- *
+ * <p>
  * Install it and then just hit "Run" on a certain benchmark method
  */
 
@@ -70,7 +70,7 @@ public class LargeResponseBenchmark {
                 }
             };
             String nsdl = "service activity{" + schemaString + "}";
-            nadel = Nadel.newNadel().dsl(nsdl).serviceExecutionFactory(serviceExecutionFactory).build();
+            nadel = Nadel.newNadel().dsl("activity", nsdl).serviceExecutionFactory(serviceExecutionFactory).build();
             query = readFromClasspath("large_response_benchmark_query.graphql");
         }
 

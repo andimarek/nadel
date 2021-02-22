@@ -3,7 +3,7 @@ package graphql.nadel.result;
 import graphql.Assert;
 import graphql.GraphQLError;
 import graphql.Internal;
-import graphql.execution.ExecutionPath;
+import graphql.execution.ResultPath;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 
@@ -29,7 +29,7 @@ public abstract class ExecutionResultNode {
     private final int totalFieldRenameCount;
     private final int totalTypeRenameCount;
 
-    private final ExecutionPath executionPath;
+    private final ResultPath executionPath;
 
     private final String alias;
     private final List<String> fieldIds;
@@ -79,6 +79,7 @@ public abstract class ExecutionResultNode {
         return completedValue;
     }
 
+
     public boolean isNullValue() {
         return completedValue == null;
     }
@@ -127,7 +128,7 @@ public abstract class ExecutionResultNode {
         return totalTypeRenameCount;
     }
 
-    public ExecutionPath getExecutionPath() {
+    public ResultPath getResultPath() {
         return executionPath;
     }
 
@@ -138,6 +139,7 @@ public abstract class ExecutionResultNode {
     public ExecutionResultNode withNewCompletedValue(Object completedValue) {
         return transform(builder -> builder.completedValue(completedValue));
     }
+
 
     public ExecutionResultNode withNewErrors(List<GraphQLError> errors) {
         return transform(builder -> builder.errors(errors));
@@ -174,7 +176,7 @@ public abstract class ExecutionResultNode {
         protected List<GraphQLError> errors = new ArrayList<>();
         protected Map<String, Object> extensions = emptyMap();
         protected ElapsedTime elapsedTime;
-        protected ExecutionPath executionPath;
+        protected ResultPath executionPath;
 
         private String alias;
         private List<String> fieldIds = new ArrayList<>();
@@ -196,7 +198,7 @@ public abstract class ExecutionResultNode {
             this.errors.addAll(existing.getErrors());
             this.extensions = existing.extensions;
             this.elapsedTime = existing.getElapsedTime();
-            this.executionPath = existing.getExecutionPath();
+            this.executionPath = existing.getResultPath();
             this.alias = existing.getAlias();
             this.fieldIds.addAll(existing.getFieldIds());
 
@@ -278,7 +280,7 @@ public abstract class ExecutionResultNode {
             return (T) this;
         }
 
-        public T executionPath(ExecutionPath executionPath) {
+        public T executionPath(ResultPath executionPath) {
             this.executionPath = executionPath;
             return (T) this;
         }

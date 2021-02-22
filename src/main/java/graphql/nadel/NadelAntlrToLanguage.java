@@ -73,13 +73,19 @@ public class NadelAntlrToLanguage extends GraphqlAntlrToLanguage {
     public StitchingDsl createStitchingDsl(StitchingDSLParser.StitchingDSLContext ctx) {
         StitchingDsl.Builder builder = StitchingDsl.newStitchingDSL();
         addCommonData(builder, ctx);
-        List<ServiceDefinition> serviceDefinitions = ctx.serviceDefinition().stream()
-                .map(this::createServiceDefinition)
-                .collect(Collectors.toList());
-        builder.serviceDefinitions(serviceDefinitions);
+        if (ctx.serviceDefinition() != null) {
+            ServiceDefinition serviceDefinition = createServiceDefinition(ctx.serviceDefinition());
+            builder.serviceDefinition(serviceDefinition);
+        }
         if (ctx.commonDefinition() != null) {
             builder.commonDefinition(createCommonDefinition(ctx.commonDefinition()));
         }
+
+        List<SDLDefinition> definitions = createTypeSystemDefinitions(ctx.typeSystemDefinition());
+        builder.sdlDefinitions(definitions);
+        List<SDLDefinition> extensions = createTypeSystemExtensions(ctx.typeSystemExtension());
+        builder.addSdlDefinitions(extensions);
+
         return builder.build();
     }
 

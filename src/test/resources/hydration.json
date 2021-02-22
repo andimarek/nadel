@@ -1,74 +1,72 @@
 {
-  "serviceDefinitions": [
-    {
-      "name": "FooService",
-      "typeDefinitions": [
-        {
-          "name": "Query",
-          "fieldDefinitions": [
-            {
-              "name": "foo",
-              "type": {
-                "name": "Foo"
-              }
+  "serviceDefinition": {
+    "name": "FooService",
+    "typeDefinitions": [
+      {
+        "name": "Query",
+        "fieldDefinitions": [
+          {
+            "name": "foo",
+            "type": {
+              "name": "Foo"
             }
-          ]
-        },
-        {
-          "name": "Foo",
-          "fieldDefinitions": [
-            {
-              "name": "id",
-              "type": {
-                "name": "ID"
-              },
-              "inputValueDefinitions": [
-                {
-                  "name": "inputArg",
+          }
+        ]
+      },
+      {
+        "name": "Foo",
+        "fieldDefinitions": [
+          {
+            "name": "id",
+            "type": {
+              "name": "ID"
+            },
+            "inputValueDefinitions": [
+              {
+                "name": "inputArg",
+                "type": {
                   "type": {
-                    "type": {
-                      "name": "ID"
-                    }
+                    "name": "ID"
                   }
                 }
-              ],
-              "fieldTransformation": {
-                "underlyingServiceHydration": {
-                  "serviceName": "OtherService",
-                  "topLevelField": "resolveId",
-                  "objectIdentifier": "id",
-                  "objectMatchByIndex": false,
-                  "arguments": [
-                    {
-                      "name": "otherId",
-                      "remoteArgumentSource": {
-                        "path": [
-                          "id"
-                        ],
-                        "sourceType": "OBJECT_FIELD"
-                      }
-                    },
-                    {
-                      "name": "arg1",
-                      "remoteArgumentSource": {
-                        "name": "ctxParam",
-                        "sourceType": "CONTEXT"
-                      }
-                    },
-                    {
-                      "name": "arg2",
-                      "remoteArgumentSource": {
-                        "name": "inputArg",
-                        "sourceType": "FIELD_ARGUMENT"
-                      }
+              }
+            ],
+            "fieldTransformation": {
+              "underlyingServiceHydration": {
+                "serviceName": "OtherService",
+                "topLevelField": "resolveId",
+                "arguments": [
+                  {
+                    "name": "otherId",
+                    "remoteArgumentSource": {
+                      "path": [
+                        "id"
+                      ],
+                      "sourceType": "OBJECT_FIELD"
                     }
-                  ]
-                }
+                  },
+                  {
+                    "name": "arg1",
+                    "remoteArgumentSource": {
+                      "name": "ctxParam",
+                      "sourceType": "CONTEXT"
+                    }
+                  },
+                  {
+                    "name": "arg2",
+                    "remoteArgumentSource": {
+                      "name": "inputArg",
+                      "sourceType": "FIELD_ARGUMENT"
+                    }
+                  }
+                ],
+                "objectIdentifier": "id",
+                "objectMatchByIndex": false
               }
             }
-          ]
-        }
-      ]
-    }
-  ]
+          }
+        ]
+      }
+    ]
+  }
 }

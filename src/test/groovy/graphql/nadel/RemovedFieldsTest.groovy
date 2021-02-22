@@ -568,7 +568,7 @@ class RemovedFieldsTest extends StrategyTestHelper {
     }
 
     def setupFragmentTests() {
-        GraphQLSchema overallSchema = TestUtil.schemaFromNdsl('''
+        GraphQLSchema overallSchema = TestUtil.schemaFromNdsl([Issues : '''
         service Issues {
             type Query {
                 issue: Issue
@@ -579,7 +579,7 @@ class RemovedFieldsTest extends StrategyTestHelper {
                 restricted: String
             }
         }
-        ''')
+        '''])
         GraphQLSchema issueSchema = TestUtil.schema("""
         type Query {
             issue : Issue
@@ -664,7 +664,7 @@ class RemovedFieldsTest extends StrategyTestHelper {
     }
 
     def setupFragmentHydrationTests() {
-        def overallSchema = TestUtil.schemaFromNdsl('''
+        def overallSchema = TestUtil.schemaFromNdsl([Issues:'''
         service Issues {
             type Query {
                 issue: Issue
@@ -675,6 +675,8 @@ class RemovedFieldsTest extends StrategyTestHelper {
                 author: User => hydrated from UserService.usersById(id: $source.authorId) object identified by id
             }
         }
+        ''',
+                UserService: '''
         service UserService {
             type Query {
                 userByIds(id: ID): User
@@ -684,7 +686,7 @@ class RemovedFieldsTest extends StrategyTestHelper {
                 restricted: String 
             }
         }
-        ''')
+        '''])
         def issueSchema = TestUtil.schema("""
         type Query {
             issue : Issue

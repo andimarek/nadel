@@ -1,10 +1,8 @@
 package graphql.nadel.dsl
 
 import graphql.AssertException
-import graphql.language.SourceLocation;
-import spock.lang.Specification;
-
-import static org.junit.jupiter.api.Assertions.*;
+import graphql.language.SourceLocation
+import spock.lang.Specification
 
 class UnderlyingServiceHydrationTest extends Specification {
     def "error if providing an identifier and the object indexed is null"() {

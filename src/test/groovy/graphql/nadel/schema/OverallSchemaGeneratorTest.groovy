@@ -159,7 +159,7 @@ class OverallSchemaGeneratorTest extends Specification {
     @Unroll
     def "#opsType definition could be merged for #caseName"(String opsType, String caseName, String fooService, String barService, List<String> expectedList) {
         given:
-        def schema = TestUtil.schemaFromNdsl(fooService + barService)
+        def schema = TestUtil.schemaFromNdsl([Foo: fooService, Bar: barService])
         when:
         def resultList
         switch (opsType) {
@@ -181,29 +181,29 @@ class OverallSchemaGeneratorTest extends Specification {
         resultList != null && resultList as Set == expectedList as Set
 
         where:
-        opsType        | caseName                                                                              | fooService                                                                            | barService                                                                            | expectedList                                             | _
-        "query"        | "both services with default definition"                                               | "service Foo {$fooService_default_query $fooType}"                                    | "service Bar {$barService_default_query $barType}"                                    | ["foo", "bar"]                                           | _
-        "query"        | "one service with default definition and one service defined in schema"               | "service Foo {$fooService_query_in_schema $fooType}"                                  | "service Bar {$barService_default_query $barType}"                                    | ["foo", "bar"]                                           | _
-        "query"        | "one service with default definition and one service defined in schema and extension" | "service Foo {$fooService_query_in_schema $fooType $fooQueryExtension}"               | "service Bar {$barService_default_query $barType}"                                    | ["foo", "foo2", "bar"]                                   | _
-        "query"        | "both services with definition in schema"                                             | "service Foo {$fooService_query_in_schema $fooType}"                                  | "service Bar {$barService_query_in_schema $barType}"                                  | ["foo", "bar"]                                           | _
-        "query"        | "both services with definition in schema and extension"                               | "service Foo {$fooService_query_in_schema $fooType $fooQueryExtension}"               | "service Bar {$barService_query_in_schema $barType, $barQueryExtension}"              | ["foo", "foo2", "bar", "bar2"]                           | _
-        "mutation"     | "both services with default definition"                                               | "service Foo {$fooService_default_mutation $fooType}"                                 | "service Bar {$barService_default_mutation $barType}"                                 | ["setFoo", "setBar"]                                     | _
-        "mutation"     | "one service with default definition and one service defined in schema"               | "service Foo {$fooService_mutation_in_schema $fooType}"                               | "service Bar {$barService_default_mutation $barType}"                                 | ["setFoo", "setBar"]                                     | _
-        "mutation"     | "one service with default definition and one service defined in schema and extension" | "service Foo {$fooService_mutation_in_schema $fooType $fooMutationExtension}"         | "service Bar {$barService_default_mutation $barType}"                                 | ["setFoo", "setFoo2", "setBar"]                          | _
-        "mutation"     | "both services with definition in schema"                                             | "service Foo {$fooService_mutation_in_schema $fooType}"                               | "service Bar {$barService_mutation_in_schema $barType}"                               | ["setFoo", "setBar"]                                     | _
-        "mutation"     | "both services with definition in schema and extension"                               | "service Foo {$fooService_mutation_in_schema $fooType $fooMutationExtension}"         | "service Bar {$barService_mutation_in_schema $barType $barMutationExtension}"         | ["setFoo", "setFoo2", "setBar", "setBar2"]               | _
-        "subscription" | "both services with default definition"                                               | "service Foo {$fooService_default_subscription $fooType}"                             | "service Bar {$barService_default_subscription $barType}"                             | ["subFoo", "subBar"]                                     | _
-        "subscription" | "one service with default definition and one service defined in schema"               | "service Foo {$fooService_subscription_in_schema $fooType}"                           | "service Bar {$barService_default_subscription $barType}"                             | ["subFoo", "subBar"]                                     | _
-        "subscription" | "one service with default definition and one service defined in schema and extension" | "service Foo {$fooService_subscription_in_schema $fooType $fooSubscriptionExtension}" | "service Bar {$barService_default_subscription $barType}"                             | ["subFoo", "subFoo2", "subBar"]                          | _
-        "subscription" | "both services with definition in schema"                                             | "service Foo {$fooService_subscription_in_schema $fooType}"                           | "service Bar {$barService_subscription_in_schema $barType}"                           | ["subFoo", "subBar"]                                     | _
-        "subscription" | "both services with definition in schema and extension"                               | "service Foo {$fooService_subscription_in_schema $fooType $fooSubscriptionExtension}" | "service Bar {$barService_subscription_in_schema $barType $barSubscriptionExtension}" | ["subFoo", "subFoo2", "subBar", "subBar2"]               | _
-        "directives" | "both services" | "service Foo {$fooService_with_directives $fooType }" | "service Bar {$barService_with_directives $barType}" | ["include", "skip", "deprecated", "cloudId", "cloudId2", "specifiedBy"] | _
+        opsType        | caseName                                                                              | fooService                                                                            | barService                                                                            | expectedList                                                                                   | _
+        "query"        | "both services with default definition"                                               | "service Foo {$fooService_default_query $fooType}"                                    | "service Bar {$barService_default_query $barType}"                                    | ["foo", "bar"]                                                                                 | _
+        "query"        | "one service with default definition and one service defined in schema"               | "service Foo {$fooService_query_in_schema $fooType}"                                  | "service Bar {$barService_default_query $barType}"                                    | ["foo", "bar"]                                                                                 | _
+        "query"        | "one service with default definition and one service defined in schema and extension" | "service Foo {$fooService_query_in_schema $fooType $fooQueryExtension}"               | "service Bar {$barService_default_query $barType}"                                    | ["foo", "foo2", "bar"]                                                                         | _
+        "query"        | "both services with definition in schema"                                             | "service Foo {$fooService_query_in_schema $fooType}"                                  | "service Bar {$barService_query_in_schema $barType}"                                  | ["foo", "bar"]                                                                                 | _
+        "query"        | "both services with definition in schema and extension"                               | "service Foo {$fooService_query_in_schema $fooType $fooQueryExtension}"               | "service Bar {$barService_query_in_schema $barType, $barQueryExtension}"              | ["foo", "foo2", "bar", "bar2"]                                                                 | _
+        "mutation"     | "both services with default definition"                                               | "service Foo {$fooService_default_mutation $fooType}"                                 | "service Bar {$barService_default_mutation $barType}"                                 | ["setFoo", "setBar"]                                                                           | _
+        "mutation"     | "one service with default definition and one service defined in schema"               | "service Foo {$fooService_mutation_in_schema $fooType}"                               | "service Bar {$barService_default_mutation $barType}"                                 | ["setFoo", "setBar"]                                                                           | _
+        "mutation"     | "one service with default definition and one service defined in schema and extension" | "service Foo {$fooService_mutation_in_schema $fooType $fooMutationExtension}"         | "service Bar {$barService_default_mutation $barType}"                                 | ["setFoo", "setFoo2", "setBar"]                                                                | _
+        "mutation"     | "both services with definition in schema"                                             | "service Foo {$fooService_mutation_in_schema $fooType}"                               | "service Bar {$barService_mutation_in_schema $barType}"                               | ["setFoo", "setBar"]                                                                           | _
+        "mutation"     | "both services with definition in schema and extension"                               | "service Foo {$fooService_mutation_in_schema $fooType $fooMutationExtension}"         | "service Bar {$barService_mutation_in_schema $barType $barMutationExtension}"         | ["setFoo", "setFoo2", "setBar", "setBar2"]                                                     | _
+        "subscription" | "both services with default definition"                                               | "service Foo {$fooService_default_subscription $fooType}"                             | "service Bar {$barService_default_subscription $barType}"                             | ["subFoo", "subBar"]                                                                           | _
+        "subscription" | "one service with default definition and one service defined in schema"               | "service Foo {$fooService_subscription_in_schema $fooType}"                           | "service Bar {$barService_default_subscription $barType}"                             | ["subFoo", "subBar"]                                                                           | _
+        "subscription" | "one service with default definition and one service defined in schema and extension" | "service Foo {$fooService_subscription_in_schema $fooType $fooSubscriptionExtension}" | "service Bar {$barService_default_subscription $barType}"                             | ["subFoo", "subFoo2", "subBar"]                                                                | _
+        "subscription" | "both services with definition in schema"                                             | "service Foo {$fooService_subscription_in_schema $fooType}"                           | "service Bar {$barService_subscription_in_schema $barType}"                           | ["subFoo", "subBar"]                                                                           | _
+        "subscription" | "both services with definition in schema and extension"                               | "service Foo {$fooService_subscription_in_schema $fooType $fooSubscriptionExtension}" | "service Bar {$barService_subscription_in_schema $barType $barSubscriptionExtension}" | ["subFoo", "subFoo2", "subBar", "subBar2"]                                                     | _
+        "directives"   | "both services"                                                                       | "service Foo {$fooService_with_directives $fooType }"                                 | "service Bar {$barService_with_directives $barType}"                                  | ["include", "skip", "deprecated", "cloudId", "cloudId2", "specifiedBy", "hydrated", "renamed"] | _
     }
 
 
     def "doesn't contain empty Mutation or Subscription"() {
         when:
-        def schema = TestUtil.schemaFromNdsl("service Foo { type Query{hello:String}}")
+        def schema = TestUtil.schemaFromNdsl([Foo: "service Foo { type Query{hello:String}}"])
 
         then:
         schema.getMutationType() == null
@@ -213,7 +213,7 @@ class OverallSchemaGeneratorTest extends Specification {
 
     def "doesn't contain empty Subscription"() {
         when:
-        def schema = TestUtil.schemaFromNdsl("service Foo { type Query{hello:String} type Mutation{hello:String}}")
+        def schema = TestUtil.schemaFromNdsl([Foo: "service Foo { type Query{hello:String} type Mutation{hello:String}}"])
 
         then:
         schema.getSubscriptionType() == null
@@ -222,7 +222,8 @@ class OverallSchemaGeneratorTest extends Specification {
 
     def "extend types works"() {
         when:
-        def schema = TestUtil.schemaFromNdsl("""
+        def schema = TestUtil.schemaFromNdsl([
+                S1: '''
         service S1 {
             type Query {
                 a: String
@@ -237,6 +238,8 @@ class OverallSchemaGeneratorTest extends Specification {
                 y: String
             }
         } 
+        ''',
+                S2: '''
         service S2 {
             type Query {
                 c: String
@@ -248,7 +251,7 @@ class OverallSchemaGeneratorTest extends Specification {
                 z: String 
             }
         }
-        """)
+        '''])
         then:
         schema.getQueryType().fieldDefinitions.collect { it.name } == ['a', 'b', 'c', 'd']
         (schema.getType("A") as GraphQLObjectType).fieldDefinitions.collect {
@@ -259,7 +262,8 @@ class OverallSchemaGeneratorTest extends Specification {
 
     def "only extend Query works"() {
         when:
-        def schema = TestUtil.schemaFromNdsl("""
+        def schema = TestUtil.schemaFromNdsl([
+                S1: '''
         service S1 {
             extend type Query {
                 a: String
@@ -268,12 +272,14 @@ class OverallSchemaGeneratorTest extends Specification {
                 b: String
             }
         } 
+        ''',
+                S2: '''
         service S2 {
             extend type Query {
                 c: String
             }
         }
-        """)
+        '''])
         then:
         schema.getQueryType().fieldDefinitions.collect { it.name } == ['a', 'b', 'c']
 
@@ -281,7 +287,8 @@ class OverallSchemaGeneratorTest extends Specification {
 
     def "services can not declare types with same names"() {
         when:
-        TestUtil.schemaFromNdsl("""
+        TestUtil.schemaFromNdsl([
+                S1: '''
         service S1 {
             type Query {
                 a: String
@@ -290,6 +297,8 @@ class OverallSchemaGeneratorTest extends Specification {
                 x: String
             }
         }
+        ''',
+                S2: '''
         service S2 {
             type Query {
                 c: String
@@ -298,7 +307,7 @@ class OverallSchemaGeneratorTest extends Specification {
                 x: String 
             }
         }
-        """)
+        '''])
 
         then:
         def parseException = thrown GraphQLException
@@ -307,7 +316,8 @@ class OverallSchemaGeneratorTest extends Specification {
 
     def "services can declare operation types with the same names"() {
         when:
-        def result = TestUtil.schemaFromNdsl("""
+        def result = TestUtil.schemaFromNdsl([
+                S1: '''
         service S1 {
             schema {
                 query: MyQuery
@@ -319,6 +329,8 @@ class OverallSchemaGeneratorTest extends Specification {
                 x: String
             }
         }
+        ''',
+                S2: '''
         service S2 {
             schema {
                 query: MyQuery
@@ -327,7 +339,7 @@ class OverallSchemaGeneratorTest extends Specification {
                 c: String
             }
         }
-        """)
+        '''])
 
         then:
         result.queryType.fieldDefinitions.collect { it.name } == ["a", "c"]
@@ -336,7 +348,8 @@ class OverallSchemaGeneratorTest extends Specification {
 
     def "services can still extend types"() {
         when:
-        def result = TestUtil.schemaFromNdsl("""
+        def result = TestUtil.schemaFromNdsl([
+                S1: '''
         service S1 {
             type Query {
                 a: String
@@ -345,6 +358,8 @@ class OverallSchemaGeneratorTest extends Specification {
                 x: String
             }
         }
+        ''',
+                S2: '''
         service S2 {
             type Query {
                 c: String
@@ -353,12 +368,44 @@ class OverallSchemaGeneratorTest extends Specification {
                 y: String 
             }
         }
-        """)
+        '''])
 
 
         then:
         result.queryType.fieldDefinitions.collect { it.name } == ["a", "c"]
         (result.typeMap["A"] as GraphQLObjectType).fieldDefinitions.collect { it.name } == ["x", "y"]
+    }
+
+    def "custom directives are in place"() {
+
+        when:
+        def result = TestUtil.schemaFromNdsl([
+                S1: '''
+        service S1 {
+            type Query {
+                a: String
+            }
+            type A {
+                x: String
+            }
+        }
+        ''',
+                S2: '''
+        service S2 {
+            type Query {
+                c: String
+            }
+            extend type A {
+                y: String 
+            }
+        }
+        '''])
+
+
+        then:
+        result.getDirective(NadelDirectives.HYDRATED_DIRECTIVE_DEFINITION.getName())
+        result.getDirective(NadelDirectives.RENAMED_DIRECTIVE_DEFINITION.getName())
+        result.getType(NadelDirectives.NADEL_HYDRATION_ARGUMENT_DEFINITION.getName())
     }
 
 }

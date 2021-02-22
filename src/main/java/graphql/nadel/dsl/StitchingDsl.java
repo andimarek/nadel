@@ -9,6 +9,7 @@ import graphql.language.Node;
 import graphql.language.NodeBuilder;
 import graphql.language.NodeChildrenContainer;
 import graphql.language.NodeVisitor;
+import graphql.language.SDLDefinition;
 import graphql.language.SourceLocation;
 import graphql.util.TraversalControl;
 import graphql.util.TraverserContext;
@@ -24,31 +25,45 @@ import static graphql.Assert.assertNotNull;
 public class StitchingDsl extends AbstractNode<StitchingDsl> {
 
 
-    private final List<ServiceDefinition> serviceDefinitions;
+    private final ServiceDefinition serviceDefinition;
     private final CommonDefinition commonDefinition;
+    private final List<SDLDefinition> sdlDefinitions;
 
-    private StitchingDsl(List<ServiceDefinition> serviceDefinitions,
-                         CommonDefinition commonDefinition, SourceLocation sourceLocation,
+    private StitchingDsl(ServiceDefinition serviceDefinition, CommonDefinition commonDefinition, List<SDLDefinition> definitions, SourceLocation sourceLocation,
                          List<Comment> comments,
                          IgnoredChars ignoredChars,
                          Map<String, String> additionalData) {
         super(sourceLocation, comments, ignoredChars, additionalData);
-        this.serviceDefinitions = serviceDefinitions;
+        this.serviceDefinition = serviceDefinition;
         this.commonDefinition = commonDefinition;
+        this.sdlDefinitions = definitions;
     }
 
 
-    public List<ServiceDefinition> getServiceDefinitions() {
-        return new ArrayList<>(serviceDefinitions);
+    public ServiceDefinition getServiceDefinition() {
+        return serviceDefinition;
     }
 
     public CommonDefinition getCommonDefinition() {
         return commonDefinition;
     }
 
+    public List<SDLDefinition> getSDLDefinitions() {
+        return sdlDefinitions;
+    }
+
     @Override
     public List<Node> getChildren() {
-        return new ArrayList<>(serviceDefinitions);
+        ArrayList<Node> nodes = new ArrayList<>();
+        if (serviceDefinition != null) {
+            nodes.add(serviceDefinition);
+        }
+        if (commonDefinition != null) {
+            nodes.add(commonDefinition);
+        }
+        nodes.addAll(sdlDefinitions);
+        return nodes;
+
     }
 
     @Override
@@ -86,7 +101,8 @@ public class StitchingDsl extends AbstractNode<StitchingDsl> {
 
         private List<Comment> comments = new ArrayList<>();
         private SourceLocation sourceLocation;
-        private List<ServiceDefinition> serviceDefinitions = new ArrayList<>();
+        private ServiceDefinition serviceDefinition;
+        private List<SDLDefinition> definitions = new ArrayList<>();
         private CommonDefinition commonDefinition;
         private IgnoredChars ignoredChars = IgnoredChars.EMPTY;
         private Map<String, String> additionalData = new LinkedHashMap<>();
@@ -121,8 +137,8 @@ public class StitchingDsl extends AbstractNode<StitchingDsl> {
             return this;
         }
 
-        public Builder serviceDefinitions(List<ServiceDefinition> serviceDefinitions) {
-            this.serviceDefinitions = serviceDefinitions;
+        public Builder serviceDefinition(ServiceDefinition serviceDefinition) {
+            this.serviceDefinition = serviceDefinition;
             return this;
         }
 
@@ -131,12 +147,20 @@ public class StitchingDsl extends AbstractNode<StitchingDsl> {
             return this;
         }
 
-
-        public StitchingDsl build() {
-            return new StitchingDsl(serviceDefinitions, commonDefinition, sourceLocation, comments, ignoredChars, additionalData);
+        public Builder sdlDefinitions(List<SDLDefinition> definitions) {
+            this.definitions.clear();
+            this.definitions.addAll(definitions);
+            return this;
         }
 
+        public Builder addSdlDefinitions(List<SDLDefinition> definitions) {
+            this.definitions.addAll(definitions);
+            return this;
+        }
+
+
+        public StitchingDsl build() {
+            return new StitchingDsl(serviceDefinition, commonDefinition, definitions, sourceLocation, comments, ignoredChars, additionalData);
+        }
     }
-
-
 }

@@ -51,7 +51,7 @@ service Issues {
     }
     type Issue {
         id: ID
-        authors: [User] => hydrated from Users.usersById(id: $source.authorIds) object identified by id, batch size 10
+        authors: [User] => hydrated from Users.users(ids: $source.authorIds) object identified by id, batch size 10
     }
 }
 

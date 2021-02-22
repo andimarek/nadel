@@ -1,38 +1,36 @@
 {
-  "serviceDefinitions": [
-    {
-      "name": "FooService",
-      "typeDefinitions": [
-        {
-          "name": "Query",
-          "fieldDefinitions": [
-            {
-              "name": "foo",
-              "type": {
-                "name": "Foo"
+  "serviceDefinition": {
+    "name": "FooService",
+    "typeDefinitions": [
+      {
+        "name": "Query",
+        "fieldDefinitions": [
+          {
+            "name": "foo",
+            "type": {
+              "name": "Foo"
+            }
+          }
+        ]
+      },
+      {
+        "name": "Foo",
+        "fieldDefinitions": [
+          {
+            "name": "id",
+            "type": {
+              "name": "ID"
+            },
+            "fieldTransformation": {
+              "fieldMappingDefinition": {
+                "inputPath": [
+                  "fooId"
+                ]
               }
             }
-          ]
-        },
-        {
-          "name": "Foo",
-          "fieldDefinitions": [
-            {
-              "name": "id",
-              "type": {
-                "name": "ID"
-              },
-              "fieldTransformation": {
-                "fieldMappingDefinition": {
-                  "inputPath": [
-                    "fooId"
-                  ]
-                }
-              }
-            }
-          ]
-        }
-      ]
-    }
-  ]
+          }
+        ]
+      }
+    ]
+  }
 }

@@ -19,6 +19,7 @@ import static graphql.nadel.NadelExecutionInput.newNadelExecutionInput
 import static graphql.nadel.testutils.TestUtil.serviceFactory
 import static graphql.nadel.testutils.TestUtil.typeDefinitions
 import static java.util.concurrent.CompletableFuture.completedFuture
+
 class NadelE2ESyntheticHydrationTest extends Specification {
 
     def "simple hydration query with a synthetic field"() {
@@ -47,7 +48,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         }
         """)
 
-        def nsdl = '''
+        def nsdl = [
+                service1: '''
         service service1 {
             type Query {
                 issue(id: ID): Issue
@@ -57,6 +59,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 project: Project => hydrated from service2.projects.project(id: $source.projectId)
             }
         }
+        ''',
+                service2: '''
         service service2 {
             type Query {
                 projects: ProjectsQuery
@@ -69,7 +73,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 name: String
             }
         }
-        '''
+        ''']
 
         def query = '''
             { issue { project { name } } }
@@ -90,7 +94,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 .query(query)
                 .artificialFieldsUUID("UUID")
                 .build()
-        def topLevelData = [issue: [id: "1", projectId:"project1"]]
+        def topLevelData = [issue: [id: "1", projectId: "project1"]]
 
         def hydrationData = [projects: [project: [id: "project1", name: "Project 1"]]]
 
@@ -134,7 +138,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         }
         """)
 
-        def nsdl = '''
+        def nsdl = [
+                service1: '''
         service service1 {
             type Query {
                 issues: [Issue]
@@ -144,6 +149,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 authors: [User] => hydrated from service2.users.usersByIds(id: $source.authorIds) object identified by id
             }
         }
+        ''',
+                service2: '''
         service service2 {
             type Query {
                 users: UsersQuery
@@ -158,7 +165,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 lastName: String
             }
         }
-        '''
+        ''']
 
         def query = "{issues {id authors {id}}}"
         ServiceExecution serviceExecution1 = Mock(ServiceExecution)
@@ -216,7 +223,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
     def "query with three nested hydrations and synthetic fields"() {
         given:
 
-        def nsdl = '''
+        def nsdl = [
+                Foo: '''
          service Foo {
             type Query{
                foos: [Foo]  
@@ -226,6 +234,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 bar: Bar => hydrated from Bar.barsQuery.barsById(id: $source.barId) object identified by barId, batch size 2
             }
          }
+         ''',
+                Bar: '''
          service Bar {
             type Query{
                 barsQuery: BarQuery
@@ -240,7 +250,33 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 nestedBar: Bar => hydrated from Bar.barsQuery.barsById(id: $source.nestedBarId) object identified by barId
             }
          }
-        '''
+        ''']
+
+        def directivesBaseNsdl = [
+                Foo: '''
+            type Query{
+               foos: [Foo]  
+            }
+            type Foo {
+                name: String
+                bar: Bar @hydrated(service: "Bar" field: "barsQuery.barsById" arguments : [{ name:"id" value:"$source.barId"}] identifiedBy : "barId" batchSize : 2 )
+            }
+         ''',
+                Bar: '''
+            type Query{
+                barsQuery: BarQuery
+            } 
+            type BarQuery {
+                bar: Bar 
+                barsById(id: [ID]): [Bar]
+            }
+            type Bar {
+                barId: ID
+                name: String 
+                nestedBar: Bar @hydrated(service: "Bar" field: "barsQuery.barsById" arguments : [{ name: "id" value: "$source.nestedBarId"}] identifiedBy : "barId")
+            }
+        ''']
+
         def underlyingSchema1 = typeDefinitions('''
             type Query{
                 foos: [Foo]
@@ -280,6 +316,11 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 .serviceExecutionFactory(serviceFactory)
                 .build()
 
+        Nadel directivesBasedNadel = newNadel()
+                .dsl(directivesBaseNsdl)
+                .serviceExecutionFactory(serviceFactory)
+                .build()
+
         NadelExecutionInput nadelExecutionInput = newNadelExecutionInput()
                 .query(query)
                 .artificialFieldsUUID("UUID")
@@ -296,7 +337,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         ServiceExecutionResult hydrationResult2 = new ServiceExecutionResult(hydrationData2)
         ServiceExecutionResult hydrationResult3 = new ServiceExecutionResult(hydrationData3)
         when:
-        def result = nadel.execute(nadelExecutionInput)
+        def result = nadel.execute(nadelExecutionInput).join()
 
         then:
         1 * serviceExecution1.execute(_) >>
@@ -314,12 +355,35 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         1 * serviceExecution2.execute(_) >>
                 completedFuture(hydrationResult3)
 
-        result.join().data == [foos: [[bar: [name: "Bar 1", nestedBar: [name: "NestedBarName1", nestedBar: [name: "NestedBarName2"]]]], [bar: [name: "Bar 2", nestedBar: null]], [bar: [name: "Bar 3", nestedBar: null]]]]
+        result.data == [foos: [[bar: [name: "Bar 1", nestedBar: [name: "NestedBarName1", nestedBar: [name: "NestedBarName2"]]]], [bar: [name: "Bar 2", nestedBar: null]], [bar: [name: "Bar 3", nestedBar: null]]]]
+
+        when:
+        result = directivesBasedNadel.execute(nadelExecutionInput).join()
+
+        then:
+        1 * serviceExecution1.execute(_) >>
+                completedFuture(topLevelResult)
+
+        1 * serviceExecution2.execute(_) >>
+                completedFuture(hydrationResult1_1)
+
+        1 * serviceExecution2.execute(_) >>
+                completedFuture(hydrationResult1_2)
+
+        1 * serviceExecution2.execute(_) >>
+                completedFuture(hydrationResult2)
+
+        1 * serviceExecution2.execute(_) >>
+                completedFuture(hydrationResult3)
+
+        result.data == [foos: [[bar: [name: "Bar 1", nestedBar: [name: "NestedBarName1", nestedBar: [name: "NestedBarName2"]]]], [bar: [name: "Bar 2", nestedBar: null]], [bar: [name: "Bar 3", nestedBar: null]]]]
+
     }
 
     def "extending types from another service is possible with synthetic fields"() {
         given:
-        def ndsl = '''
+        def ndsl = [
+                Service1: '''
          service Service1 {
             extend type Query{
                 root: Root  
@@ -334,6 +398,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 name: String
             }
          }
+         ''',
+                Service2: '''
          service Service2 {
             extend type Root {
                 extension: Extension => hydrated from Service2.lookUpQuery.lookup(id: $source.id) object identified by id 
@@ -343,7 +409,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 name: String
             }
          }
-        '''
+        ''']
         def underlyingSchema1 = typeDefinitions('''
             type Query{
                 root: Root  
@@ -483,7 +549,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         }
         """)
 
-        def nsdl = '''
+        def nsdl = [
+                Issues     : '''
         service Issues {
             type Query {
                 issues: [Issue]
@@ -497,6 +564,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 name: String
             }
         }
+        ''',
+                UserService: '''   
         service UserService {
             type Query {
                 userQuery: UserQuery
@@ -509,13 +578,13 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 name: String
             }
         }
-        '''
+        ''']
 
         ServiceExecution serviceExecution1 = Mock(ServiceExecution)
         ServiceExecution serviceExecution2 = Mock(ServiceExecution)
 
         ServiceExecutionFactory serviceFactory = TestUtil.serviceFactory([
-                Issues: new Tuple2(serviceExecution1, issueSchema),
+                Issues     : new Tuple2(serviceExecution1, issueSchema),
                 UserService: new Tuple2(serviceExecution2, userServiceSchema)]
         )
 
@@ -557,10 +626,10 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         def response1 = new ServiceExecutionResult([issues: [issue1]])
 
         def user1 = [[id: "USER-1", name: "User 1", object_identifier__UUID: "USER-1"]]
-        def response2 = new ServiceExecutionResult([userQuery:[usersByIds: user1]])
+        def response2 = new ServiceExecutionResult([userQuery: [usersByIds: user1]])
 
         def batchResponse1 = [[id: "USER-1", name: "User 1", object_identifier__UUID: "USER-1"], [id: "USER-2", name: "User 2", object_identifier__UUID: "USER-2"]]
-        def response3 = new ServiceExecutionResult([userQuery:[usersByIds: batchResponse1]])
+        def response3 = new ServiceExecutionResult([userQuery: [usersByIds: batchResponse1]])
 
         when:
         def result = nadel.execute(nadelExecutionInput)
@@ -600,7 +669,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 id: ID
             }
         """)
-        def nsdl = '''
+        def nsdl = [
+                Foo: '''
             service Foo {
                 type Query {
                     foo: Foo => renamed from fooOriginal
@@ -610,6 +680,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                     fooBar: Bar => hydrated from Bar.bars.barById(id: \$source.fooBarId)
                 }
             }
+            ''',
+                Bar: '''
             service Bar {
                 type Query {
                     bars: BarQuery
@@ -621,7 +693,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                     id: ID!
                 }
             }
-        '''
+        ''']
         def query = """
             {
                 foo {
@@ -652,7 +724,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 .build()
 
         def data1 = [fooOriginal: [id: "Foo", fooBarId: "hydrated-bar"]]
-        def data2 = [bars:[barById: [id: "hydrated-bar"]]]
+        def data2 = [bars: [barById: [id: "hydrated-bar"]]]
         def response1 = new ServiceExecutionResult(data1)
         def response2 = new ServiceExecutionResult(data2)
 
@@ -701,7 +773,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
             characterIds: [ID]
         }
         """)
-        def nsdl = '''
+        def nsdl = [testing: '''
         service testing {
             type Query {
                 tests: TestQuery
@@ -724,7 +796,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 characters: [TestingCharacter] => hydrated from testing.tests.characters(ids: $source.characterIds) object identified by id, batch size  3
             }
         }
-        '''
+        ''']
         ServiceExecution serviceExecution1 = Mock(ServiceExecution)
 
         ServiceExecutionFactory serviceFactory = TestUtil.serviceFactory([
@@ -763,10 +835,10 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         def response1 = new ServiceExecutionResult([tests: [testing: [movies: movies]]])
 
         def characters1 = [[id: "C1", name: "Luke", object_identifier__UUID: "C1"], [id: "C2", name: "Leia", object_identifier__UUID: "C2"], [id: "C1", name: "Luke", object_identifier__UUID: "C1"]]
-        def response2 = new ServiceExecutionResult([tests:[characters: characters1]])
+        def response2 = new ServiceExecutionResult([tests: [characters: characters1]])
 
         def characters2 = [[id: "C2", name: "Leia", object_identifier__UUID: "C2"], [id: "C3", name: "Anakin", object_identifier__UUID: "C3"]]
-        def response3 = new ServiceExecutionResult([tests:[characters: characters2]])
+        def response3 = new ServiceExecutionResult([tests: [characters: characters2]])
 
         when:
         def result = nadel.execute(nadelExecutionInput)
@@ -811,7 +883,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         }
         """)
 
-        def nsdl = '''
+        def nsdl = [testing: '''
         service testing {
             type Query {
                 tests: TestQuery
@@ -834,7 +906,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 character: TestingCharacter => hydrated from testing.tests.character(id: $source.characterId) object identified by id, batch size  3
             }
         }
-        '''
+        ''']
         ServiceExecution serviceExecution1 = Mock(ServiceExecution)
 
         ServiceExecutionFactory serviceFactory = TestUtil.serviceFactory([
@@ -868,11 +940,11 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 .artificialFieldsUUID("UUID")
                 .build()
 
-        def movies = [id: "M1", name: "Movie 1", characterId:"C1"]
+        def movies = [id: "M1", name: "Movie 1", characterId: "C1"]
         def response1 = new ServiceExecutionResult([tests: [testing: [movie: movies]]])
 
         def characters1 = [id: "C1", name: "Luke", object_identifier__UUID: "C1"]
-        def response2 = new ServiceExecutionResult([tests:[character: characters1]])
+        def response2 = new ServiceExecutionResult([tests: [character: characters1]])
 
         when:
         def result = nadel.execute(nadelExecutionInput)
@@ -885,7 +957,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         1 * serviceExecution1.execute(_) >> completedFuture(response2)
 
         def data = [movie: [id: "M1", name: "Movie 1", character: [id: "C1", name: "Luke"]]]
-        result.join().data == [tests:[testing: data]]
+        result.join().data == [tests: [testing: data]]
     }
 
     ExecutionIdProvider idProvider = new ExecutionIdProvider() {
@@ -897,7 +969,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
 
     def "query with synthetic hydration that fail with errors are reflected in the result"() {
         given:
-        def hydratedNDSL = '''
+        def hydratedNDSL = [
+                Foo: '''
          service Foo {
             type Query{
                 foo: Foo
@@ -907,6 +980,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 bar: Bar => hydrated from Bar.barQuery.barById(id: $source.barId)
             }
          }
+         ''',
+                Bar: '''
          service Bar {
             type Query{
                 barQuery: BarQuery
@@ -920,7 +995,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 nestedBar: Bar => hydrated from Bar.barQuery.barById(id: $source.nestedBarId)
             }
          }
-        '''
+        ''']
         def hydratedUnderlyingSchema1 = typeDefinitions('''
             type Query{
                 foo: Foo
@@ -951,7 +1026,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
 
         ServiceExecution serviceExecution1 = new MockServiceExecution(
                 [foo: [barId: "barId123"]])
-        ServiceExecution serviceExecution2 = new MockServiceExecution([barQuery:[barById: null]],
+        ServiceExecution serviceExecution2 = new MockServiceExecution([barQuery: [barById: null]],
                 [[message: "Error during hydration"]])
 
         ServiceExecutionFactory serviceFactory = serviceFactory([
@@ -1001,7 +1076,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         }
         """)
 
-        def nsdl = '''
+        def nsdl = [
+                service1: '''
         service service1 {
             type Query {
                 foo: Foo
@@ -1011,6 +1087,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 bar: Bar => hydrated from service2.barsQuery.barById(id: $source.barId)
             }
         }
+        ''',
+                service2: '''
         service service2 {
             type Query {
                 barsQuery: BarsQuery
@@ -1023,7 +1101,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 name: String
             }
         }
-        '''
+        ''']
 
         ServiceExecution serviceExecution1 = Mock(ServiceExecution)
         ServiceExecution serviceExecution2 = Mock(ServiceExecution)
@@ -1084,7 +1162,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         }
         """)
 
-        def nsdl = '''
+        def nsdl = [
+                service1: '''
         service service1 {
             type Query {
                 foo: Foo
@@ -1094,6 +1173,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 bar: [Bar] => hydrated from service2.barsQuery.barsById(id: $source.barId)
             }
         }
+        ''',
+                service2: '''
         service service2 {
             type Query {
                 barsQuery: BarsQuery
@@ -1106,7 +1187,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 name: String
             }
         }
-        '''
+        ''']
 
         ServiceExecution serviceExecution1 = Mock(ServiceExecution)
         ServiceExecution serviceExecution2 = Mock(ServiceExecution)
@@ -1174,7 +1255,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         }
         """)
 
-        def nsdl = '''
+        def nsdl = [
+                Issues     : '''
         service Issues {
             type Query {
                 issues: [Issue]
@@ -1184,6 +1266,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 authors: [User] => hydrated from UserService.usersQuery.usersByIds(ids: $source.authorIds) object identified by id, batch size 2
             }
         }
+        ''',
+                UserService: '''
         service UserService {
             type Query {
                 usersQuery: UserQuery
@@ -1196,7 +1280,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 name: String
             }
         }
-        '''
+        ''']
 
         def query = '{issues {id authors {name} }}'
         def issue1 = [id: "ISSUE-1", authorIds: []]
@@ -1206,7 +1290,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         ServiceExecution serviceExecution2 = Mock(ServiceExecution)
 
         ServiceExecutionFactory serviceFactory = serviceFactory([
-                Issues: new Tuple2(serviceExecution1, issueSchema),
+                Issues     : new Tuple2(serviceExecution1, issueSchema),
                 UserService: new Tuple2(serviceExecution2, userServiceSchema)]
         )
 
@@ -1253,7 +1337,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         }
         """)
 
-        def nsdl = '''
+        def nsdl = [
+                Issues     : '''
         service Issues {
             type Query {
                 issues: [Issue]
@@ -1263,6 +1348,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 authors: [User] => hydrated from UserService.usersQuery.usersByIds(ids: $source.authorIds) object identified by id, batch size 2
             }
         }
+        ''',
+                UserService: '''
         service UserService {
             type Query {
                 usersQuery: UserQuery
@@ -1275,7 +1362,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 name: String
             }
         }
-        '''
+        ''']
 
         def query = '{issues {id authors {name} }}'
         def issue1 = [id: "ISSUE-1", authorIds: null]
@@ -1285,7 +1372,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         ServiceExecution serviceExecution2 = Mock(ServiceExecution)
 
         ServiceExecutionFactory serviceFactory = serviceFactory([
-                Issues: new Tuple2(serviceExecution1, issueSchema),
+                Issues     : new Tuple2(serviceExecution1, issueSchema),
                 UserService: new Tuple2(serviceExecution2, userServiceSchema)]
         )
 
@@ -1333,7 +1420,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         }
         """)
 
-        def nsdl = '''
+        def nsdl = [
+                service1: '''
         service service1 {
             type Query {
                 foo: Foo
@@ -1343,6 +1431,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 bar: [Bar] => hydrated from service2.barsQuery.barsById(id: $source.barId)
             }
         }
+        ''',
+                service2: '''
         service service2 {
             type Query {
                 barsQuery: BarsQuery
@@ -1355,7 +1445,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 name: String
             }
         }
-        '''
+        ''']
         def query = "{foo {bar{ name}}}"
 
         ServiceExecution serviceExecution1 = Mock(ServiceExecution)
@@ -1418,7 +1508,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         }
         """)
 
-        def nsdl = '''
+        def nsdl = [
+                service1: '''
         service service1 {
             type Query {
                 issue(id: ID): Issue
@@ -1428,6 +1519,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 project: Project => hydrated from service2.projects.project(id: $source.projectId)
             }
         }
+        ''',
+                service2: '''
         service service2 {
             type Query {
                 projects: ProjectsQuery
@@ -1440,7 +1533,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 name: String
             }
         }
-        '''
+        ''']
 
         def query = '''
             { issue { project { name } } }
@@ -1461,7 +1554,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 .query(query)
                 .artificialFieldsUUID("UUID")
                 .build()
-        def topLevelData = [issue: [id: "1", projectId:"project1"]]
+        def topLevelData = [issue: [id: "1", projectId: "project1"]]
 
         def hydrationData = [projects: null]
 
@@ -1506,7 +1599,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         }
         """)
 
-        def nsdl = '''
+        def nsdl = [
+                service1: '''
         service service1 {
             type Query {
                 issue(id: ID): Issue
@@ -1516,6 +1610,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 project: Project => hydrated from service2.projects.project(id: $source.projectId)
             }
         }
+        ''',
+                service2: '''
         service service2 {
             type Query {
                 projects: ProjectsQuery
@@ -1528,7 +1624,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 name: String
             }
         }
-        '''
+        ''']
 
         def query = '''
             { issue { project { name } } }
@@ -1549,7 +1645,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 .query(query)
                 .artificialFieldsUUID("UUID")
                 .build()
-        def topLevelData = [issue: [id: "1", projectId:"project1"]]
+        def topLevelData = [issue: [id: "1", projectId: "project1"]]
 
         def hydrationData = [projects: [project: null]]
 
@@ -1593,7 +1689,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         }
         """)
 
-        def nsdl = '''
+        def nsdl = [
+                service1: '''
         service service1 {
             type Query {
                 issues: [Issue]
@@ -1603,6 +1700,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 authors: [User] => hydrated from service2.users.usersByIds(id: $source.authorIds) object identified by id
             }
         }
+        ''',
+                service2: '''
         service service2 {
             type Query {
                 users: UsersQuery
@@ -1617,7 +1716,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 lastName: String
             }
         }
-        '''
+        ''']
 
         def query = "{issues {id authors {id}}}"
         ServiceExecution serviceExecution1 = Mock(ServiceExecution)
@@ -1671,6 +1770,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
 
         result.join().data == [issues: [issue1Result, issue2Result, issue3Result]]
     }
+
     def "top level field data returns null in batched synthetic hydration"() {
         given:
         def underlyingSchema1 = typeDefinitions("""
@@ -1696,7 +1796,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
         }
         """)
 
-        def nsdl = '''
+        def nsdl = [
+                service1: '''
         service service1 {
             type Query {
                 issues: [Issue]
@@ -1706,6 +1807,8 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 authors: [User] => hydrated from service2.users.usersByIds(id: $source.authorIds) object identified by id
             }
         }
+        ''',
+                service2: '''
         service service2 {
             type Query {
                 users: UsersQuery
@@ -1720,7 +1823,7 @@ class NadelE2ESyntheticHydrationTest extends Specification {
                 lastName: String
             }
         }
-        '''
+        ''']
 
         def query = "{issues {id authors {id}}}"
         ServiceExecution serviceExecution1 = Mock(ServiceExecution)
@@ -1772,7 +1875,6 @@ class NadelE2ESyntheticHydrationTest extends Specification {
 
         result.join().data == [issues: [issue1Result, issue2Result, issue3Result]]
     }
-
 
 
 }

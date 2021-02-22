@@ -105,7 +105,7 @@ public class Execution {
         }
 
         ExecutionContext executionContext = executionData.executionContext;
-        FieldSubSelection fieldSubSelection = executionData.fieldSubSelection;
+        FieldSubSelection fieldSubSelection = executionHelper.getFieldSubSelection(executionContext);
 
         InstrumentationContext<ExecutionResult> instrumentationCtx = instrumentation.beginExecute(new NadelInstrumentationExecuteOperationParameters(executionContext, instrumentationState));
 

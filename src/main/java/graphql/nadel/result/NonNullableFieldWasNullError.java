@@ -4,7 +4,7 @@ import graphql.ErrorType;
 import graphql.GraphQLError;
 import graphql.GraphqlErrorHelper;
 import graphql.PublicApi;
-import graphql.execution.ExecutionPath;
+import graphql.execution.ResultPath;
 import graphql.language.SourceLocation;
 import graphql.schema.GraphQLNonNull;
 import graphql.schema.GraphQLType;
@@ -23,7 +23,7 @@ public class NonNullableFieldWasNullError implements GraphQLError {
     private final String message;
     private final List<Object> path;
 
-    public NonNullableFieldWasNullError(GraphQLNonNull nonNullType, ExecutionPath executionPath) {
+    public NonNullableFieldWasNullError(GraphQLNonNull nonNullType, ResultPath executionPath) {
         GraphQLType unwrappedTyped = GraphQLTypeUtil.unwrapNonNull(nonNullType);
         this.path = executionPath.toList();
         this.message = String.format(

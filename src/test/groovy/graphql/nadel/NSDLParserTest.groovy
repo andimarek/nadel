@@ -1,6 +1,7 @@
 package graphql.nadel
 
 import graphql.language.Node
+import graphql.language.ObjectTypeDefinition
 import graphql.nadel.dsl.NodeId
 import graphql.parser.InvalidSyntaxException
 import org.antlr.v4.runtime.misc.ParseCancellationException
@@ -47,30 +48,6 @@ class NSDLParserTest extends Specification {
         astAsMap(stitchingDSL) == expectedJson("service-definition.json")
         assertNodesHaveIds(stitchingDSL.children)
     }
-
-    def "two services"() {
-        given:
-        def simpleDSL = """
-         service Foo {
-            type Query {
-                hello1: String
-            }
-        }
-        service Bar {
-            type Query {
-                hello2: String
-            }
-        }
-       """
-        NSDLParser parser = new NSDLParser()
-        when:
-        def stitchingDSL = parser.parseDSL(simpleDSL)
-
-        then:
-        astAsMap(stitchingDSL) == expectedJson("two-services.json")
-        assertNodesHaveIds(stitchingDSL.children)
-    }
-
 
     def "parse error"() {
         given:
@@ -359,6 +336,31 @@ class NSDLParserTest extends Specification {
 
         then:
         astAsMap(stitchingDSL).size() > 0
+    }
+
+    def "parser allows normal graphql SDL syntax"() {
+
+        given:
+
+        def dsl = """
+            type Service {
+                id: String
+            }
+            type Query {
+                service: Service
+            }
+        """
+
+        when:
+        NSDLParser parser = new NSDLParser()
+        def stitchingDSL = parser.parseDSL(dsl)
+
+        then:
+        stitchingDSL.getServiceDefinition() == null
+        def sdlDefinitions = stitchingDSL.getSDLDefinitions()
+        sdlDefinitions.size() == 2
+        (sdlDefinitions[0] as ObjectTypeDefinition).getName() == "Service"
+        (sdlDefinitions[1] as ObjectTypeDefinition).getName() == "Query"
     }
 }
 
