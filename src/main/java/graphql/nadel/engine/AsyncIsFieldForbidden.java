@@ -26,7 +26,12 @@ public class AsyncIsFieldForbidden {
     private final NadelContext nadelContext;
     private final List<Argument> hydrationRootArguments;
 
-    public AsyncIsFieldForbidden(ServiceExecutionHooks serviceExecutionHooks, ExecutionContext executionContext, NadelContext nadelContext, List<Argument> hydrationRootArguments) {
+    public AsyncIsFieldForbidden(
+            ServiceExecutionHooks serviceExecutionHooks,
+            ExecutionContext executionContext,
+            NadelContext nadelContext,
+            List<Argument> hydrationRootArguments
+    ) {
         this.serviceExecutionHooks = serviceExecutionHooks;
         this.executionContext = executionContext;
         this.nadelContext = nadelContext;

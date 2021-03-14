@@ -2203,7 +2203,7 @@ class NadelExecutionStrategyTest2 extends StrategyTestHelper {
 
         def serviceExecutionHooks = new ServiceExecutionHooks() {
             @Override
-            CompletableFuture<Optional<GraphQLError>> isFieldForbidden(NormalizedQueryField normalizedField, ExecutionContext executionContext, Object userSuppliedContext) {
+            CompletableFuture<Optional<GraphQLError>> isFieldForbidden(NormalizedQueryField normalizedField, List<Argument> arguments, ExecutionContext executionContext, Object userSuppliedContext) {
                 if (normalizedField.getResultKey() == "foo") {
                     completedFuture(Optional.of(expectedError))
                 } else {
