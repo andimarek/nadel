@@ -258,6 +258,9 @@ class OverallSchemaGeneratorTest extends Specification {
             it.name
         } == ['x', 'y', 'z']
 
+        // source location is generated
+        schema.getQueryType().getDefinition() != null
+        schema.getQueryType().getDefinition().getSourceLocation() != null
     }
 
     def "only extend Query works"() {
@@ -399,6 +402,49 @@ class OverallSchemaGeneratorTest extends Specification {
                 y: String 
             }
         }
+        '''])
+
+
+        then:
+        result.getDirective(NadelDirectives.HYDRATED_DIRECTIVE_DEFINITION.getName())
+        result.getDirective(NadelDirectives.RENAMED_DIRECTIVE_DEFINITION.getName())
+        result.getType(NadelDirectives.NADEL_HYDRATION_ARGUMENT_DEFINITION.getName())
+
+        when: "we define the directives ourselves in schema"
+        result = TestUtil.schemaFromNdsl([
+                S1: '''
+            type Query {
+                a: String
+            }
+            type A {
+                x: String
+            }
+            
+            input NadelHydrationArgument {
+                name: String!
+                value: String!
+            }
+
+            directive @hydrated(
+                arguments: [NadelHydrationArgument!],
+                batchSize: Int = 200,
+                field: String!,
+                identifiedBy: String! = "id",
+                indexed: Boolean = false,
+                service: String!
+            ) on FIELD_DEFINITION
+            
+            directive @renamed(
+                from: String!
+            ) on SCALAR | OBJECT | FIELD_DEFINITION | INTERFACE | UNION | ENUM | INPUT_OBJECT
+        ''',
+                S2: '''
+            type Query {
+                c: String
+            }
+            extend type A {
+                y: String 
+            }
         '''])
 
 

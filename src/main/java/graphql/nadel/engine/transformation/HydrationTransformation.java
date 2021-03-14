@@ -91,7 +91,7 @@ public class HydrationTransformation extends FieldTransformation {
          * The goal here is to return a flat list HydrationInputNodes which then can be used to create the hydration query.
          */
 
-        NormalizedQueryField matchingNormalizedOverallField = getMatchingNormalizedQueryFieldBasedOnParent(environment.parentNode);
+        NormalizedQueryField matchingNormalizedOverallField = getMatchingNormalizedQueryFieldBasedOnParent(environment.correctParentNode);
 
         // we can have a list of hydration inputs. E.g.: $source.userIds (this is a list of leafs)
         // or we can have a list of things inside the path: e.g.: $source.issues.userIds (this is a list of objects)
@@ -99,8 +99,13 @@ public class HydrationTransformation extends FieldTransformation {
             if (node.getChildren().size() == 0) {
                 return handleEmptyList((ListExecutionResultNode) node, allTransformations, environment, matchingNormalizedOverallField);
             }
-            // Update the environment.parent to current node
-            environment.parentNode = node;
+
+            // if the correct parent node is the direct-parent then we can change it to the current node
+            // OTHERWISE this means we had a hydration inside another hydration and
+            // we want to use the correct-parent node in this case and not the current node
+            if (environment.correctParentNode == environment.directParentNode) {
+                environment.correctParentNode = node;
+            }
             ExecutionResultNode child = node.getChildren().get(0);
             if (child instanceof LeafExecutionResultNode) {
                 return handleListOfLeafs((ListExecutionResultNode) node, allTransformations, environment, matchingNormalizedOverallField);
@@ -159,7 +164,7 @@ public class HydrationTransformation extends FieldTransformation {
 
         leafNode = (LeafExecutionResultNode) mapToOverallFieldAndTypes(leafNode, allTransformations, matchingNormalizedField);
         ResultPath executionPath = pathMapper.mapPath(leafNode.getResultPath(), leafNode.getResultKey(), environment);
-        leafNode = leafNode.transform(builder -> builder.executionPath(executionPath));
+        leafNode = leafNode.transform(builder -> builder.resultPath(executionPath));
 
         if (leafNode.isNullValue()) {
             return leafNode;
@@ -170,7 +175,7 @@ public class HydrationTransformation extends FieldTransformation {
                     .fieldIds(leafNode.getFieldIds())
                     .objectType(leafNode.getObjectType())
                     .fieldDefinition(leafNode.getFieldDefinition())
-                    .executionPath(leafNode.getResultPath())
+                    .resultPath(leafNode.getResultPath())
                     .completedValue(leafNode.getCompletedValue())
                     .elapsedTime(leafNode.getElapsedTime())
                     .normalizedField(matchingNormalizedField)

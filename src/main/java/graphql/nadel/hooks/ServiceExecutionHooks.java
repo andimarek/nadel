@@ -2,6 +2,7 @@ package graphql.nadel.hooks;
 
 import graphql.GraphQLError;
 import graphql.PublicSpi;
+import graphql.execution.ExecutionContext;
 import graphql.language.Argument;
 import graphql.nadel.engine.HooksVisitArgumentValueEnvironment;
 import graphql.nadel.normalized.NormalizedQueryField;
@@ -35,12 +36,17 @@ public interface ServiceExecutionHooks {
      * Called to determine whether a field is forbidden which means it should be omitted from the query to the underlying service.
      * When a field is forbidden, the field is set to null and a GraphQL error is inserted into the overall response.
      *
-     * @param normalizedField        the field in question
+     * @param normalizedField     the field in question
      * @param hydrationRootArguments parameters supplied to the top level field of the hydration
-     * @param userSuppliedContext    the context supplied to Nadel in {@link graphql.nadel.NadelExecutionInput}
+     * @param executionContext    for context into the query execution
+     * @param userSuppliedContext the context supplied to Nadel in {@link graphql.nadel.NadelExecutionInput}
      * @return an error if the field should be omitted, empty optional otherwise
      */
-    default CompletableFuture<Optional<GraphQLError>> isFieldForbidden(NormalizedQueryField normalizedField, List<Argument> hydrationRootArguments, Object userSuppliedContext) {
+    default CompletableFuture<Optional<GraphQLError>> isFieldForbidden(
+            NormalizedQueryField normalizedField,
+            List<Argument> hydrationRootArguments,
+            ExecutionContext executionContext,
+            Object userSuppliedContext) {
         return CompletableFuture.completedFuture(Optional.empty());
     }
 

@@ -51,7 +51,7 @@ public abstract class ExecutionResultNode {
         this.totalNodeCount = builderBase.totalNodeCount;
         this.totalFieldRenameCount = builderBase.totalFieldRenameCount;
         this.totalTypeRenameCount = builderBase.totalTypeRenameCount;
-        this.executionPath = assertNotNull(builderBase.executionPath);
+        this.executionPath = assertNotNull(builderBase.resultPath);
 
         this.alias = builderBase.alias;
         this.fieldIds = builderBase.fieldIds;
@@ -176,7 +176,7 @@ public abstract class ExecutionResultNode {
         protected List<GraphQLError> errors = new ArrayList<>();
         protected Map<String, Object> extensions = emptyMap();
         protected ElapsedTime elapsedTime;
-        protected ResultPath executionPath;
+        protected ResultPath resultPath;
 
         private String alias;
         private List<String> fieldIds = new ArrayList<>();
@@ -198,7 +198,7 @@ public abstract class ExecutionResultNode {
             this.errors.addAll(existing.getErrors());
             this.extensions = existing.extensions;
             this.elapsedTime = existing.getElapsedTime();
-            this.executionPath = existing.getResultPath();
+            this.resultPath = existing.getResultPath();
             this.alias = existing.getAlias();
             this.fieldIds.addAll(existing.getFieldIds());
 
@@ -280,8 +280,8 @@ public abstract class ExecutionResultNode {
             return (T) this;
         }
 
-        public T executionPath(ResultPath executionPath) {
-            this.executionPath = executionPath;
+        public T resultPath(ResultPath resultPath) {
+            this.resultPath = resultPath;
             return (T) this;
         }
 

@@ -3,6 +3,7 @@ package graphql.nadel.engine;
 import graphql.Internal;
 import graphql.language.Document;
 import graphql.language.OperationDefinition;
+import graphql.nadel.NadelExecutionHints;
 import graphql.nadel.normalized.NormalizedQueryFromAst;
 
 import java.util.Optional;
@@ -20,17 +21,20 @@ public class NadelContext {
     private final String originalOperationName;
     private final String objectIdentifierAlias;
     private final NormalizedQueryFromAst normalizedOverallQuery;
+    private final NadelExecutionHints nadelExecutionHints;
 
     private NadelContext(Object userSuppliedContext,
                          String underscoreTypeNameAlias,
                          String originalOperationName,
                          String objectIdentifierAlias,
-                         NormalizedQueryFromAst normalizedOverallQuery) {
+                         NormalizedQueryFromAst normalizedOverallQuery,
+                         NadelExecutionHints nadelExecutionHints) {
         this.userSuppliedContext = userSuppliedContext;
         this.underscoreTypeNameAlias = underscoreTypeNameAlias;
         this.originalOperationName = originalOperationName;
         this.objectIdentifierAlias = objectIdentifierAlias;
         this.normalizedOverallQuery = normalizedOverallQuery;
+        this.nadelExecutionHints = nadelExecutionHints;
     }
 
     public Object getUserSuppliedContext() {
@@ -49,11 +53,13 @@ public class NadelContext {
         return originalOperationName;
     }
 
+    public NadelExecutionHints getNadelExecutionHints() {
+        return nadelExecutionHints;
+    }
 
     public static Builder newContext() {
         return new Builder();
     }
-
 
     private static String mkUnderscoreTypeNameAlias(String uuid) {
         return String.format("typename__%s", uuid);
@@ -72,7 +78,7 @@ public class NadelContext {
         private String originalOperationName;
         private String artificialFieldsUUID;
         private NormalizedQueryFromAst normalizedOverallQuery;
-
+        private NadelExecutionHints nadelExecutionHints;
 
         public Builder normalizedOverallQuery(NormalizedQueryFromAst normalizedQueryFromAst) {
             this.normalizedOverallQuery = normalizedQueryFromAst;
@@ -101,10 +107,14 @@ public class NadelContext {
             return this;
         }
 
+        public Builder nadelExecutionHints(NadelExecutionHints nadelExecutionHints) {
+            this.nadelExecutionHints = nadelExecutionHints;
+            return this;
+        }
 
         public NadelContext build() {
             String uuid = artificialFieldsUUID != null ? artificialFieldsUUID : UUID.randomUUID().toString().replaceAll("-", "_");
-            return new NadelContext(userSuppliedContext, mkUnderscoreTypeNameAlias(uuid), originalOperationName, createObjectIdentifierAlias(uuid), normalizedOverallQuery);
+            return new NadelContext(userSuppliedContext, mkUnderscoreTypeNameAlias(uuid), originalOperationName, createObjectIdentifierAlias(uuid), normalizedOverallQuery, nadelExecutionHints);
         }
     }
 }

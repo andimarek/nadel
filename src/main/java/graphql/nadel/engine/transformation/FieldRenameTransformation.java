@@ -64,15 +64,15 @@ public class FieldRenameTransformation extends FieldTransformation {
                                            List<FieldTransformation> allTransformations,
                                            UnapplyEnvironment environment) {
 
-        NormalizedQueryField matchingNormalizedOverallField = getMatchingNormalizedQueryFieldBasedOnParent(environment.parentNode);
+        NormalizedQueryField matchingNormalizedOverallField = getMatchingNormalizedQueryFieldBasedOnParent(environment.correctParentNode);
         // the result tree should be in terms of the overall schema
         ExecutionResultNode resultNode = getSubTree(executionResultNode, mappingDefinition.getInputPath().size() - 1);
 
         resultNode = mapToOverallFieldAndTypes(resultNode, allTransformations, matchingNormalizedOverallField);
         resultNode = replaceFieldsAndTypesInsideList(resultNode, allTransformations, matchingNormalizedOverallField);
         // the new path is the parent + the original result key
-        ResultPath mappedPath = environment.parentNode.getResultPath().segment(resultNode.getResultKey());
-        resultNode = resultNode.transform(builder -> builder.executionPath(mappedPath));
+        ResultPath mappedPath = environment.correctParentNode.getResultPath().segment(resultNode.getResultKey());
+        resultNode = resultNode.transform(builder -> builder.resultPath(mappedPath));
 
         return new UnapplyResult(resultNode, TraversalControl.CONTINUE);
     }

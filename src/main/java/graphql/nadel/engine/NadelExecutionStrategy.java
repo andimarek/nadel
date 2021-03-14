@@ -159,9 +159,9 @@ public class NadelExecutionStrategy {
                     .transformMergedFields(executionContext, underlyingSchema, operationName, operation, singletonList(mergedField), serviceExecutionHooks, service, serviceContext);
 
             resultNodes.add(transformedQueryCF.thenCompose(transformedQuery -> {
-                Map<String, FieldTransformation> fieldIdToTransformation = transformedQuery.getFieldIdToTransformation();
-                Map<String, String> typeRenameMappings = transformedQuery.getTypeRenameMappings();
-                Map<FieldTransformation, String> transformationToFieldId = transformedQuery.getTransformationToFieldId();
+                Map<String, FieldTransformation> fieldIdToTransformation = transformedQuery.getTransformations().getFieldIdToTransformation();
+                Map<String, String> typeRenameMappings = transformedQuery.getTransformations().getTypeRenameMappings();
+                Map<FieldTransformation, String> transformationToFieldId = transformedQuery.getTransformations().getTransformationToFieldId();
 
                 ExecutionContext newExecutionContext = buildServiceVariableOverrides(executionContext, transformedQuery.getVariableValues());
 
@@ -172,41 +172,48 @@ public class NadelExecutionStrategy {
                     return CompletableFuture.completedFuture(getForbiddenTopLevelFieldResult(nadelContext, esi, fieldForbiddenError));
                 }
 
-                CompletableFuture<RootExecutionResultNode> serviceCallResult = serviceExecutor
-                        .execute(newExecutionContext, transformedQuery, service, operation, serviceContext, false);
+                CompletableFuture<RootExecutionResultNode> convertedResult;
 
-                CompletableFuture<RootExecutionResultNode> convertedResult = serviceCallResult
-                        .thenApply(resultNode -> {
-                            if (nadelContext.getUserSuppliedContext() instanceof BenchmarkContext) {
-                                BenchmarkContext benchmarkContext = (BenchmarkContext) nadelContext.getUserSuppliedContext();
-                                benchmarkContext.serviceResultNodesToOverallResult.executionId = newExecutionContext.getExecutionId();
-                                benchmarkContext.serviceResultNodesToOverallResult.resultNode = resultNode;
-                                benchmarkContext.serviceResultNodesToOverallResult.overallSchema = overallSchema;
-                                benchmarkContext.serviceResultNodesToOverallResult.correctRootNode = resultNode;
-                                benchmarkContext.serviceResultNodesToOverallResult.fieldIdToTransformation = fieldIdToTransformation;
-                                benchmarkContext.serviceResultNodesToOverallResult.typeRenameMappings = typeRenameMappings;
-                                benchmarkContext.serviceResultNodesToOverallResult.nadelContext = nadelContext;
-                                benchmarkContext.serviceResultNodesToOverallResult.transformationMetadata = transformedQuery.getRemovedFieldMap();
-                            }
-                            return (RootExecutionResultNode) serviceResultNodesToOverallResult
-                                    .convert(newExecutionContext.getExecutionId(),
-                                            resultNode,
-                                            overallSchema,
-                                            resultNode,
-                                            fieldIdToTransformation,
-                                            transformationToFieldId,
-                                            typeRenameMappings,
-                                            nadelContext,
-                                            transformedQuery.getRemovedFieldMap(),
-                                            hydrationInputPaths);
-                        });
+                if (skipTransformationProcessing(nadelContext, transformedQuery)) {
+                    convertedResult = serviceExecutor
+                            .execute(newExecutionContext, transformedQuery, service, operation, serviceContext, overallSchema, false);
+                    resultComplexityAggregator.incrementServiceNodeCount(service.getName(), 0);
+                } else {
+                    CompletableFuture<RootExecutionResultNode> serviceCallResult = serviceExecutor
+                            .execute(newExecutionContext, transformedQuery, service, operation, serviceContext, service.getUnderlyingSchema(), false);
+                    convertedResult = serviceCallResult
+                            .thenApply(resultNode -> {
+                                if (nadelContext.getUserSuppliedContext() instanceof BenchmarkContext) {
+                                    BenchmarkContext benchmarkContext = (BenchmarkContext) nadelContext.getUserSuppliedContext();
+                                    benchmarkContext.serviceResultNodesToOverallResult.executionId = newExecutionContext.getExecutionId();
+                                    benchmarkContext.serviceResultNodesToOverallResult.resultNode = resultNode;
+                                    benchmarkContext.serviceResultNodesToOverallResult.overallSchema = overallSchema;
+                                    benchmarkContext.serviceResultNodesToOverallResult.correctRootNode = resultNode;
+                                    benchmarkContext.serviceResultNodesToOverallResult.fieldIdToTransformation = fieldIdToTransformation;
+                                    benchmarkContext.serviceResultNodesToOverallResult.typeRenameMappings = typeRenameMappings;
+                                    benchmarkContext.serviceResultNodesToOverallResult.nadelContext = nadelContext;
+                                    benchmarkContext.serviceResultNodesToOverallResult.transformationMetadata = transformedQuery.getRemovedFieldMap();
+                                }
+                                return (RootExecutionResultNode) serviceResultNodesToOverallResult
+                                        .convert(newExecutionContext.getExecutionId(),
+                                                resultNode,
+                                                overallSchema,
+                                                resultNode,
+                                                fieldIdToTransformation,
+                                                transformationToFieldId,
+                                                typeRenameMappings,
+                                                nadelContext,
+                                                transformedQuery.getRemovedFieldMap(),
+                                                hydrationInputPaths);
+                            });
 
-                //set the result node count for this service
-                convertedResult.thenAccept(rootExecutionResultNode -> {
-                    resultComplexityAggregator.incrementServiceNodeCount(service.getName(), rootExecutionResultNode.getTotalNodeCount());
-                    resultComplexityAggregator.incrementFieldRenameCount(rootExecutionResultNode.getTotalFieldRenameCount());
-                    resultComplexityAggregator.incrementTypeRenameCount(rootExecutionResultNode.getTotalTypeRenameCount());
-                });
+                    // Set the result node count for this service.
+                    convertedResult.thenAccept(rootExecutionResultNode -> {
+                        resultComplexityAggregator.incrementServiceNodeCount(service.getName(), rootExecutionResultNode.getTotalNodeCount());
+                        resultComplexityAggregator.incrementFieldRenameCount(rootExecutionResultNode.getTotalFieldRenameCount());
+                        resultComplexityAggregator.incrementTypeRenameCount(rootExecutionResultNode.getTotalTypeRenameCount());
+                    });
+                }
 
                 CompletableFuture<RootExecutionResultNode> serviceResult = convertedResult
                         .thenCompose(rootResultNode -> {
@@ -230,7 +237,7 @@ public class NadelExecutionStrategy {
      * A top level field error is present if the field should not be executed and an
      * error should be put in lieu. We check this before calling out to the underlying
      * service. This error is usually present when the field has been forbidden by
-     * {@link ServiceExecutionHooks#isFieldForbidden(NormalizedQueryField, Object)}.
+     * {@link ServiceExecutionHooks#isFieldForbidden(NormalizedQueryField, ExecutionContext, Object)}.
      *
      * @param esi              the {@link ExecutionStepInfo} for the top level field
      * @param transformedQuery the query for that specific top level field
@@ -341,6 +348,15 @@ public class NadelExecutionStrategy {
 
     private NadelContext getNadelContext(ExecutionContext executionContext) {
         return executionContext.getContext();
+    }
+
+    private boolean skipTransformationProcessing(NadelContext nadelContext, QueryTransformationResult transformedQuery) {
+        TransformationState transformations = transformedQuery.getTransformations();
+        return nadelContext.getNadelExecutionHints().isOptimizeOnNoTransformations() &&
+                transformations.getFieldIdToTransformation().size() == 0 &&
+                transformations.getTypeRenameMappings().size() == 0 &&
+                !transformedQuery.getRemovedFieldMap().hasRemovedFields() &&
+                transformations.getHintTypenames().size() == 0;
     }
 }
 

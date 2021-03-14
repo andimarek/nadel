@@ -6,15 +6,16 @@ import graphql.nadel.NadelExecutionInput
 import graphql.nadel.ServiceExecution
 import graphql.nadel.ServiceExecutionResult
 import graphql.nadel.testutils.TestUtil
+import org.junit.Ignore
 import spock.lang.Specification
 
 import static graphql.nadel.Nadel.newNadel
 import static graphql.nadel.NadelExecutionInput.newNadelExecutionInput
 import static graphql.nadel.testutils.TestUtil.typeDefinitions
 import static java.util.concurrent.CompletableFuture.completedFuture
-
+@Ignore
 class NadelE2ERenameHydrationTest extends Specification {
-
+    // There's currently a bug that makes this test incorrectly pass
     def 'mutation with nested renamed fields, field types and a hydration call'() {
         def simpleNDSL = [IssuesService: '''
          service IssuesService {

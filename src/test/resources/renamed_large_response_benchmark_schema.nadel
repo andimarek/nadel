@@ -1,0 +1,63 @@
+service activity {
+type Query {
+myActivitiez: MyActivity! => renamed from myActivities
+}
+
+interface Node {
+idz: ID! => renamed from id
+}
+enum ActivityEventType {
+ASSIGNED
+UNASSIGNED
+VIEWED
+COMMENTED
+UPDATED
+CREATED
+LIKED
+TRANSITIONED
+PUBLISHED
+EDITED
+}
+
+type MyActivity {
+workedOnz: ActivityConnection! => renamed from workedOn
+viewedz: ActivityConnection! => renamed from viewed
+}
+
+type ActivityConnection {
+nodez: [ActivityItem]! => renamed from nodes
+}
+
+type ActivityItem implements Node {
+    idz: ID! => renamed from id
+    timestampz: String => renamed from timestamp
+    eventTypez: ActivityEventType  => renamed from eventType
+    objectz: ActivityObject => renamed from object
+    containerz: [ActivityObject]  => renamed from containers
+    contributorz: [ActivityContributor] => renamed from contributors
+    id: ID => renamed from object.id
+    name: String => renamed from object.name
+    cloudId: String => renamed from object.cloudID
+    url: String => renamed from object.url
+    iconURL: String => renamed from object.iconURL
+}
+
+type ActivityObject implements Node {
+    idz: ID! => renamed from id
+    namez: String  => renamed from name
+    cloudIDz: String => renamed from cloudID
+    urlz: String => renamed from url
+    iconURLz: String => renamed from iconURL
+}
+
+type ActivityContributor {
+    profilez: ActivityUser => renamed from profile
+}
+
+type ActivityUser {
+    accountIdz: ID! => renamed from accountId
+    namez: String => renamed from name
+    picturez: String  => renamed from picture
+}
+
+}

@@ -26,6 +26,7 @@ import java.util.Map;
 
 import static graphql.Assert.assertTrue;
 import static graphql.nadel.result.ResultNodeAdapter.RESULT_NODE_ADAPTER;
+import static graphql.schema.GraphQLTypeUtil.simplePrint;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singleton;
@@ -172,14 +173,17 @@ public class ResultNodesUtil {
     }
 
 
-    private static GraphQLOutputType getActualType(GraphQLFieldDefinition fieldDefinition, ResultPath executionPath) {
+    private static GraphQLOutputType getActualType(GraphQLFieldDefinition fieldDefinition, ResultPath resultPath) {
         // example: field definition type: [[String]!]!, path: /foo/bar/type[3] => result is [String]!
         GraphQLOutputType result = fieldDefinition.getType();
+        ResultPath executionPath = resultPath;
         while (executionPath.isListSegment()) {
             executionPath = executionPath.dropSegment();
             // might be non null or not
-            result = (GraphQLOutputType) GraphQLTypeUtil.unwrapNonNull(result);
-            assertTrue(result instanceof GraphQLList);
+            GraphQLOutputType tempType = (GraphQLOutputType) GraphQLTypeUtil.unwrapNonNull(result);
+            assertTrue(tempType instanceof GraphQLList, () -> String.format("Expected an embedded list type but got type %s  - complete type is %s for path %s",
+                    simplePrint(tempType), simplePrint(fieldDefinition.getType()), resultPath));
+            result = tempType;
             result = (GraphQLOutputType) ((GraphQLList) result).getWrappedType();
         }
         return result;

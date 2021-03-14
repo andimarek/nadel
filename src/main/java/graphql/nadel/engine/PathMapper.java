@@ -43,7 +43,7 @@ public class PathMapper {
      * @return the fixed path as described above
      */
     public ResultPath mapPath(ResultPath executionPath, String resultKey, UnapplyEnvironment environment) {
-        List<Object> pathSegments = new ArrayList<>(environment.parentNode.getResultPath().toList());
+        List<Object> pathSegments = new ArrayList<>(environment.correctParentNode.getResultPath().toList());
         // Add the trailing segment from the child path to the parent path
         pathSegments.add(executionPath.getSegmentValue());
 

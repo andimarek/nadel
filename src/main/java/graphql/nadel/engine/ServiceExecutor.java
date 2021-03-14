@@ -60,6 +60,7 @@ public class ServiceExecutor {
                                                               Service service,
                                                               Operation operation,
                                                               Object serviceContext,
+                                                              GraphQLSchema schema,
                                                               boolean isHydrationCall) {
 
         List<MergedField> transformedMergedFields = queryTransformerResult.getTransformedMergedFields();
@@ -70,9 +71,10 @@ public class ServiceExecutor {
         ServiceExecutionParameters serviceExecutionParameters = buildServiceExecutionParameters(executionContext, queryTransformerResult, serviceContext, isHydrationCall);
         ExecutionContext executionContextForService = buildServiceExecutionContext(executionContext, underlyingSchema, serviceExecutionParameters);
 
-        ExecutionStepInfo underlyingRootStepInfo = createRootExecutionStepInfo(service.getUnderlyingSchema(), operation);
+        ExecutionStepInfo underlyingRootStepInfo = createRootExecutionStepInfo(underlyingSchema, operation);
 
-        NormalizedQueryFromAst normalizedQuery = normalizedQueryFactory.createNormalizedQuery(underlyingSchema, serviceExecutionParameters.getQuery(),
+        // When ServiceResultNodesToOverallResult execution is skipped, the ExecutionResultNodes will reference the overall schema
+        NormalizedQueryFromAst normalizedQuery = normalizedQueryFactory.createNormalizedQuery(schema, serviceExecutionParameters.getQuery(),
                 null,
                 serviceExecutionParameters.getVariables());
 

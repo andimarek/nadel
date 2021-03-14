@@ -15,9 +15,9 @@ class ResolvedValueMapperTest extends Specification {
     def "changes __typename field value accordingly"(String given, String expected) {
         given:
         def mapping = ["Underlying": "Exposed", "A": "B", "C": "D"]
-        def unapplyEnvironment = new UnapplyEnvironment(Mock(ExecutionResultNode), false, false, mapping, Mock(GraphQLSchema))
+        def unapplyEnvironment = new UnapplyEnvironment(Mock(ExecutionResultNode), Mock(ExecutionResultNode), false, false, mapping, Mock(GraphQLSchema))
         def node = LeafExecutionResultNode.newLeafExecutionResultNode()
-                .executionPath(ResultPath.rootPath())
+                .resultPath(ResultPath.rootPath())
                 .completedValue(given)
                 .fieldDefinition(Introspection.TypeNameMetaFieldDef)
                 .build()
@@ -41,9 +41,9 @@ class ResolvedValueMapperTest extends Specification {
     def "leaves non __typename fields alone"() {
         given:
         def mapping = ["Underlying": "Exposed", "A": "B", "C": "D"]
-        def unapplyEnvironment = new UnapplyEnvironment(Mock(ExecutionResultNode), false, false, mapping, Mock(GraphQLSchema))
+        def unapplyEnvironment = new UnapplyEnvironment(Mock(ExecutionResultNode), Mock(ExecutionResultNode), false, false, mapping, Mock(GraphQLSchema))
         def node = LeafExecutionResultNode.newLeafExecutionResultNode()
-                .executionPath(ResultPath.rootPath())
+                .resultPath(ResultPath.rootPath())
                 .completedValue("Underlying")
                 .fieldDefinition(GraphQLFieldDefinition.newFieldDefinition().name("__someField").type(Scalars.GraphQLString).build())
                 .build()

@@ -2,6 +2,7 @@ package graphql.nadel
 
 import graphql.GraphQLError
 import graphql.execution.AbortExecutionException
+import graphql.execution.ExecutionContext
 import graphql.language.Argument
 import graphql.nadel.hooks.ServiceExecutionHooks
 import graphql.nadel.normalized.NormalizedQueryField
@@ -547,17 +548,15 @@ class RemovedFieldsTest extends StrategyTestHelper {
                 [key: "WORK-I1", comments: null],
                 [key: "WORK-I2", comments: null]]]
 
-        errors.size() == 2
+        errors.size() == 1
         errors[0].message.contains("removed field")
-        errors[1].message.contains("removed field")
     }
 
 
     ServiceExecutionHooks createServiceExecutionHooksWithFieldRemoval(List<String> fieldsToRemove) {
-
         return new ServiceExecutionHooks() {
             @Override
-            CompletableFuture<Optional<GraphQLError>> isFieldForbidden(NormalizedQueryField normalizedField, List<Argument> hydrationRootArguments, Object userSuppliedContext) {
+            CompletableFuture<Optional<GraphQLError>> isFieldForbidden(NormalizedQueryField normalizedField, List<Argument> hydrationRootArguments, ExecutionContext executionContext, Object userSuppliedContext) {
                 if (fieldsToRemove.contains(normalizedField.getName())) {
                     //temporary GraphQLError ->  need to implement a field permissions denied error
                     return CompletableFuture.completedFuture(Optional.of(new AbortExecutionException("removed field")))
@@ -568,7 +567,7 @@ class RemovedFieldsTest extends StrategyTestHelper {
     }
 
     def setupFragmentTests() {
-        GraphQLSchema overallSchema = TestUtil.schemaFromNdsl([Issues : '''
+        GraphQLSchema overallSchema = TestUtil.schemaFromNdsl([Issues: '''
         service Issues {
             type Query {
                 issue: Issue
@@ -631,7 +630,7 @@ class RemovedFieldsTest extends StrategyTestHelper {
 
         def hooks = new ServiceExecutionHooks() {
             @Override
-            CompletableFuture<Optional<GraphQLError>> isFieldForbidden(NormalizedQueryField normalizedField, List<Argument> hydrationRootArguments, Object userSuppliedContext) {
+            CompletableFuture<Optional<GraphQLError>> isFieldForbidden(NormalizedQueryField normalizedField, List<Argument> hydrationRootArguments, ExecutionContext executionContext, Object userSuppliedContext) {
                 if (normalizedField.getName() == "restricted" && normalizedField.getParent().getName() == "issue") {
                     //temporary GraphQLError ->  need to implement a field permissions denied error
                     return CompletableFuture.completedFuture(Optional.of(new AbortExecutionException("removed field")))
@@ -663,8 +662,60 @@ class RemovedFieldsTest extends StrategyTestHelper {
         errors[0].message.contains("removed field")
     }
 
+    def "inserts one error for a forbidden field in a list"() {
+        given:
+        GraphQLSchema overallSchema = TestUtil.schemaFromNdsl([Issues: '''
+        service Issues {
+            type Query {
+                issues: [Issue]
+            }
+ 
+            type Issue {
+                id: ID
+                relatedIssue: Issue                 
+                restricted: String
+            }
+        }
+        '''])
+        GraphQLSchema issueSchema = TestUtil.schema("""
+        type Query {
+            issues: [Issue]
+        }
+
+        type Issue {
+            id: ID
+            relatedIssue: Issue                 
+            restricted: String
+        }
+        """)
+        def query = "{issues {id restricted}}"
+
+        def hooks = createServiceExecutionHooksWithFieldRemoval(["restricted"])
+
+        def expectedQuery1 = "query nadel_2_Issues {issues {id}}"
+        def response1 = [issues: [[id: "test-1",], [id: "test-2",], [id: "test-3",]]]
+
+        when:
+        def (Map response, List<GraphQLError> errors) = test1Service(
+                overallSchema,
+                "Issues",
+                issueSchema,
+                query,
+                ["issues"],
+                expectedQuery1,
+                response1,
+                hooks,
+                Mock(ResultComplexityAggregator)
+        )
+
+        then:
+        println response
+        errors.size() == 1
+        errors[0].message.contains("removed field")
+    }
+
     def setupFragmentHydrationTests() {
-        def overallSchema = TestUtil.schemaFromNdsl([Issues:'''
+        def overallSchema = TestUtil.schemaFromNdsl([Issues     : '''
         service Issues {
             type Query {
                 issue: Issue
@@ -676,7 +727,7 @@ class RemovedFieldsTest extends StrategyTestHelper {
             }
         }
         ''',
-                UserService: '''
+                                                     UserService: '''
         service UserService {
             type Query {
                 userByIds(id: ID): User
@@ -747,9 +798,8 @@ class RemovedFieldsTest extends StrategyTestHelper {
         )
         then:
         response == overallResponse
-        errors.size() == 2
+        errors.size() == 1
         errors[0].message.contains("removed field")
-        errors[1].message.contains("removed field")
     }
 
     def "restricted single field inside hydration via fragments used twice"() {
@@ -758,7 +808,7 @@ class RemovedFieldsTest extends StrategyTestHelper {
 
         def hooks = new ServiceExecutionHooks() {
             @Override
-            CompletableFuture<Optional<GraphQLError>> isFieldForbidden(NormalizedQueryField normalizedField, List<Argument> hydrationRootArguments, Object userSuppliedContext) {
+            CompletableFuture<Optional<GraphQLError>> isFieldForbidden(NormalizedQueryField normalizedField, List<Argument> hydrationRootArguments, ExecutionContext executionContext, Object userSuppliedContext) {
                 if (normalizedField.getName() == "restricted" && normalizedField.getParent().getParent().getName() == "issue") {
                     //temporary GraphQLError ->  need to implement a field permissions denied error
                     return CompletableFuture.completedFuture(Optional.of(new AbortExecutionException("removed field")))

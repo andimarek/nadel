@@ -1,0 +1,60 @@
+{
+    myActivitiez {
+        workedOnz {
+            nodez {
+                idz
+                timestampz
+                eventTypez
+                objectz {
+                    idz
+                    namez
+                    cloudIDz
+                    urlz
+                    iconURLz
+                }
+                containerz {
+                    namez
+                }
+                contributorz {
+                    profilez {
+                        accountIdz
+                        namez
+                        picturez
+                    }
+                }
+                id
+                name
+                cloudId
+                url
+            }
+        }
+        viewedz {
+            nodez {
+                idz
+                timestampz
+                eventTypez
+                objectz {
+                    idz
+                    namez
+                    cloudIDz
+                    urlz
+                    iconURLz
+                }
+                containerz {
+                    namez
+                }
+                contributorz {
+                    profilez {
+                        accountIdz
+                        namez
+                        picturez
+                    }
+                }
+                id
+                name
+                cloudId
+                url
+            }
+        }
+    }
+}

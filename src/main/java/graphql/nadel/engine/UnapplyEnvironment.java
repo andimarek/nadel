@@ -10,7 +10,8 @@ import java.util.Map;
 public class UnapplyEnvironment {
 
 
-    public UnapplyEnvironment(ExecutionResultNode parentNode,
+    public UnapplyEnvironment(ExecutionResultNode correctParentNode,
+                              ExecutionResultNode directParentNode,
                               boolean isHydrationTransformation,
                               boolean batched,
                               Map<String, String> typeRenameMappings,
@@ -20,10 +21,14 @@ public class UnapplyEnvironment {
         this.batched = batched;
         this.typeRenameMappings = typeRenameMappings;
         this.overallSchema = overallSchema;
-        this.parentNode = parentNode;
+        this.correctParentNode = correctParentNode;
+        this.directParentNode = directParentNode;
     }
 
-    public ExecutionResultNode parentNode;
+    // this is the parent node mapped to the overall schema
+    public ExecutionResultNode correctParentNode;
+    // this is the parent node returned from the underlying service;
+    public ExecutionResultNode directParentNode;
     public boolean isHydrationTransformation;
     public boolean batched;
     public Map<String, String> typeRenameMappings;

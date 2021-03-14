@@ -12,6 +12,7 @@ import graphql.language.StringValue
 import graphql.nadel.DefinitionRegistry
 import graphql.nadel.FieldInfo
 import graphql.nadel.FieldInfos
+import graphql.nadel.NadelExecutionHints
 import graphql.nadel.Service
 import graphql.nadel.ServiceExecution
 import graphql.nadel.ServiceExecutionParameters
@@ -80,7 +81,8 @@ class ServiceExecutionHooksTest extends Specification {
 
         def nadelContext = NadelContext.newContext()
                 .artificialFieldsUUID("UUID")
-        .normalizedOverallQuery(normalizedQuery)
+                .normalizedOverallQuery(normalizedQuery)
+                .nadelExecutionHints(NadelExecutionHints.newHints().optimizeOnNoTransformations(true).build())
                 .build()
         def executionInput = ExecutionInput.newExecutionInput()
                 .query(query)

@@ -274,7 +274,7 @@ public class HydrationInputResolver {
 
             CompletableFuture<RootExecutionResultNode> serviceResult = serviceExecutor
                     .execute(executionContext, queryTransformationResult, service, operation,
-                            serviceContexts.get(service), true);
+                            serviceContexts.get(service), service.getUnderlyingSchema(), true);
 
             return serviceResult
                     .thenApply(resultNode -> convertSingleHydrationResultIntoOverallResult(executionContext.getExecutionId(),
@@ -352,10 +352,10 @@ public class HydrationInputResolver {
                                                                               ResultComplexityAggregator resultComplexityAggregator
     ) {
 
-        Map<String, FieldTransformation> transformationByResultField = queryTransformationResult.getFieldIdToTransformation();
-        Map<FieldTransformation, String> transformationToFieldId = queryTransformationResult.getTransformationToFieldId();
+        Map<String, FieldTransformation> transformationByResultField = queryTransformationResult.getTransformations().getFieldIdToTransformation();
+        Map<FieldTransformation, String> transformationToFieldId = queryTransformationResult.getTransformations().getTransformationToFieldId();
 
-        Map<String, String> typeRenameMappings = queryTransformationResult.getTypeRenameMappings();
+        Map<String, String> typeRenameMappings = queryTransformationResult.getTransformations().getTypeRenameMappings();
         assertTrue(rootResultNode.getChildren().size() == 1, () -> "expected rootResultNode to only have 1 child.");
 
         ExecutionResultNode root = rootResultNode.getChildren().get(0);
@@ -428,7 +428,7 @@ public class HydrationInputResolver {
 
         return queryTransformationResultCF.thenCompose(queryTransformationResult -> {
             return serviceExecutor
-                    .execute(executionContext, queryTransformationResult, service, operation, serviceContexts.get(service), true)
+                    .execute(executionContext, queryTransformationResult, service, operation, serviceContexts.get(service), service.getUnderlyingSchema(), true)
                     .thenApply(resultNode -> convertHydrationBatchResultIntoOverallResult(executionContext, hydrationInputs, resultNode, queryTransformationResult, resultComplexityAggregator))
                     .whenComplete(this::possiblyLogException);
         });
@@ -539,10 +539,10 @@ public class HydrationInputResolver {
         }
 
         List<ExecutionResultNode> result = new ArrayList<>();
-        Map<String, FieldTransformation> transformationByResultField = queryTransformationResult.getFieldIdToTransformation();
-        Map<FieldTransformation, String> transformationToFieldId = queryTransformationResult.getTransformationToFieldId();
+        Map<String, FieldTransformation> transformationByResultField = queryTransformationResult.getTransformations().getFieldIdToTransformation();
+        Map<FieldTransformation, String> transformationToFieldId = queryTransformationResult.getTransformations().getTransformationToFieldId();
 
-        Map<String, String> typeRenameMappings = queryTransformationResult.getTypeRenameMappings();
+        Map<String, String> typeRenameMappings = queryTransformationResult.getTransformations().getTypeRenameMappings();
 
         boolean first = true;
         for (int i = 0; i < hydrationInputNodes.size(); i++) {
@@ -601,7 +601,7 @@ public class HydrationInputResolver {
                 .objectType(inputNode.getObjectType())
                 .alias(inputNode.getAlias())
                 .fieldIds(inputNode.getFieldIds())
-                .executionPath(inputNode.getResultPath())
+                .resultPath(inputNode.getResultPath())
                 .fieldDefinition(inputNode.getFieldDefinition())
                 .completedValue(null)
                 .elapsedTime(elapsedTime)

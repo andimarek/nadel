@@ -910,7 +910,7 @@ class ExecutionStrategySourceArgumentTest extends StrategyTestHelper {
     }
 
 
-    def "two single sources that hydrates a single object"() {
+    def "two single sources that hydrates a single object and has second source in query"() {
         given:
         def overallSchema = TestUtil.schemaFromNdsl([Issues:'''
         service Issues {
@@ -918,6 +918,8 @@ class ExecutionStrategySourceArgumentTest extends StrategyTestHelper {
                 issue: Issue
               } 
               type Issue {
+                 authorId: ID
+                 accountId: ID
                  author: User => hydrated from Issues.user(id: $source.accountId, userId: $source.authorId)
               }
               type User {
@@ -942,13 +944,13 @@ class ExecutionStrategySourceArgumentTest extends StrategyTestHelper {
                  name: String
               }
         """)
-        def query = """{ issue { author { name}}}"""
+        def query = """{ issue { author { name} authorId}}"""
 
-        def expectedQuery1 = "query nadel_2_Issues {issue {accountId authorId}}"
+        def expectedQuery1 = "query nadel_2_Issues {issue {accountId authorId authorId}}"
         def response1 = [issue: [accountId: "a1", authorId: "ID1"]]
         def expectedQuery2 = "query nadel_2_Issues {user(id:\"a1\",userId:\"ID1\") {name}}"
         def response2 = [user: [name: "name1"]]
-        def overallResponse = [issue: [author: [name: "name1"]]]
+        def overallResponse = [issue: [author: [name: "name1"], authorId:"ID1"]]
 
 
         Map response

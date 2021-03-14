@@ -80,9 +80,6 @@ public class Transformer extends NodeVisitorStub {
 
     final ExecutionContext executionContext;
     final GraphQLSchema underlyingSchema;
-    final Map<String, FieldTransformation> fieldIdToTransformation;
-    final Map<FieldTransformation, String> transformationToFieldId;
-    final Map<String, String> typeRenameMappings;
     final Set<String> referencedFragmentNames;
     final Map<String, VariableDefinition> referencedVariables;
     final NadelContext nadelContext;
@@ -94,13 +91,10 @@ public class Transformer extends NodeVisitorStub {
     private Service service;
     private Object serviceContext;
     private Map<String, Object> variableValues;
-
+    private TransformationState transformations;
 
     public Transformer(ExecutionContext executionContext,
                        GraphQLSchema underlyingSchema,
-                       Map<String, FieldTransformation> fieldIdToTransformation,
-                       Map<FieldTransformation, String> transformationToFieldId,
-                       Map<String, String> typeRenameMappings,
                        Set<String> referencedFragmentNames,
                        Map<String, VariableDefinition> referencedVariables,
                        NadelContext nadelContext,
@@ -110,13 +104,10 @@ public class Transformer extends NodeVisitorStub {
                        Service service,
                        Object serviceContext,
                        TransformationMetadata transformationMetadata,
-                       Map<NormalizedQueryField, GraphQLError> forbiddenFields
-    ) {
+                       Map<NormalizedQueryField, GraphQLError> forbiddenFields,
+                       TransformationState transformations) {
         this.executionContext = executionContext;
         this.underlyingSchema = underlyingSchema;
-        this.fieldIdToTransformation = fieldIdToTransformation;
-        this.transformationToFieldId = transformationToFieldId;
-        this.typeRenameMappings = typeRenameMappings;
         this.referencedFragmentNames = referencedFragmentNames;
         this.referencedVariables = referencedVariables;
         this.nadelContext = nadelContext;
@@ -129,6 +120,7 @@ public class Transformer extends NodeVisitorStub {
         this.variableValues = variableValues;
         this.service = service;
         this.serviceContext = serviceContext;
+        this.transformations = transformations;
     }
 
     @Override
@@ -247,8 +239,9 @@ public class Transformer extends NodeVisitorStub {
 
 
             String fieldId = FieldMetadataUtil.getUniqueRootFieldId(changedField, this.transformationMetadata.getMetadataByFieldId());
-            fieldIdToTransformation.put(fieldId, transformation);
-            transformationToFieldId.put(transformation, getId(changedField));
+            transformations.putFieldIdToTransformation(fieldId, transformation);
+            transformations.putTransformationToFieldId(transformation, getId(changedField));
+
             if (transformation instanceof FieldRenameTransformation) {
                 maybeAddUnderscoreTypeName(context, changedField, fieldTypeOverall);
             }
@@ -306,6 +299,7 @@ public class Transformer extends NodeVisitorStub {
         Field changedNode = ArtificialFieldUtils.maybeAddUnderscoreTypeName(nadelContext, field, fieldType);
         if (changedNode != field) {
             TreeTransformerUtil.changeNode(traverserContext, changedNode);
+            transformations.addHintTypename(changedNode.getName());
         }
     }
 
@@ -379,7 +373,7 @@ public class Transformer extends NodeVisitorStub {
 
     private TypeMappingDefinition recordTypeRename(TypeMappingDefinition typeMappingDefinition) {
         if (typeMappingDefinition != null) {
-            typeRenameMappings.put(typeMappingDefinition.getUnderlyingName(), typeMappingDefinition.getOverallName());
+            transformations.putTypeRenameMapping(typeMappingDefinition.getUnderlyingName(), typeMappingDefinition.getOverallName());
         }
         return typeMappingDefinition;
     }

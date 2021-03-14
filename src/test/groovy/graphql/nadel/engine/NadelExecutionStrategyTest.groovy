@@ -7,6 +7,7 @@ import graphql.execution.nextgen.ExecutionHelper
 import graphql.nadel.DefinitionRegistry
 import graphql.nadel.FieldInfo
 import graphql.nadel.FieldInfos
+import graphql.nadel.NadelExecutionHints
 import graphql.nadel.Service
 import graphql.nadel.ServiceExecution
 import graphql.nadel.ServiceExecutionParameters
@@ -91,10 +92,11 @@ class NadelExecutionStrategyTest extends StrategyTestHelper {
             printAstCompact(it.query) == expectedQuery
         } as ServiceExecutionParameters) >> completedFuture(new ServiceExecutionResult(null))
 
-        resultComplexityAggregator.getTotalNodeCount() == 2
+        // Zero total and service node count as execution skipped.
+        resultComplexityAggregator.getTotalNodeCount() == 0
         resultComplexityAggregator.getFieldRenamesCount() == 0
         resultComplexityAggregator.getTypeRenamesCount() == 0
-        resultComplexityAggregator.getNodeCountsForService("service") == 2
+        resultComplexityAggregator.getNodeCountsForService("service") == 0
     }
 
     def "one call to one service with list result"() {
@@ -1232,6 +1234,7 @@ class NadelExecutionStrategyTest extends StrategyTestHelper {
         def nadelContext = NadelContext.newContext()
                 .artificialFieldsUUID("UUID")
                 .normalizedOverallQuery(normalizedQuery)
+                .nadelExecutionHints(NadelExecutionHints.newHints().optimizeOnNoTransformations(true).build())
                 .build()
         def executionInput = ExecutionInput.newExecutionInput()
                 .query(query)
@@ -1864,10 +1867,11 @@ class NadelExecutionStrategyTest extends StrategyTestHelper {
 
 
         resultData(response) == [hello: "world"]
-        resultComplexityAggregator.getTotalNodeCount() == 2
+        // Zero total and service node count as execution skipped.
+        resultComplexityAggregator.getTotalNodeCount() == 0
         resultComplexityAggregator.getFieldRenamesCount() == 0
         resultComplexityAggregator.getTypeRenamesCount() == 0
-        resultComplexityAggregator.getNodeCountsForService("MyService") == 2
+        resultComplexityAggregator.getNodeCountsForService("MyService") == 0
     }
 
     def "two top level fields with a fragment"() {
@@ -1963,11 +1967,13 @@ class NadelExecutionStrategyTest extends StrategyTestHelper {
         }) >> completedFuture(response2)
 
         resultData(response) == [issues: [issue1, issue2], user: user]
-        resultComplexityAggregator.getTotalNodeCount() == 10
+
+        // Zero total and services node count as execution skipped.
+        resultComplexityAggregator.getTotalNodeCount() == 0
         resultComplexityAggregator.getFieldRenamesCount() == 0
         resultComplexityAggregator.getTypeRenamesCount() == 0
-        resultComplexityAggregator.getNodeCountsForService("Issues") == 6
-        resultComplexityAggregator.getNodeCountsForService("UserService") == 4
+        resultComplexityAggregator.getNodeCountsForService("Issues") == 0
+        resultComplexityAggregator.getNodeCountsForService("UserService") == 0
 
     }
 
@@ -2093,11 +2099,13 @@ class NadelExecutionStrategyTest extends StrategyTestHelper {
         def issue1Result = [id: "ISSUE-1", authors: [[id: "USER-1", name: "User 1"], [id: "USER-2", name: "User 2"]]]
         resultData(response) == [issues: [issue1Result], usersByIds: [[id: "USER-1", name: "User 1"]]]
 
-        resultComplexityAggregator.getTotalNodeCount() == 16
+        // Total complexity: 16 total nodes, 11 with skipped execution.
+        resultComplexityAggregator.getTotalNodeCount() == 11
         resultComplexityAggregator.getFieldRenamesCount() == 0
         resultComplexityAggregator.getTypeRenamesCount() == 0
         resultComplexityAggregator.getNodeCountsForService("Issues") == 5
-        resultComplexityAggregator.getNodeCountsForService("UserService") == 11
+        // UserService node count is non-zero as there are 6 nodes counted in hydration resolver step.
+        resultComplexityAggregator.getNodeCountsForService("UserService") == 6
 
     }
 

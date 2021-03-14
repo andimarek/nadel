@@ -317,5 +317,121 @@ class NadelExecutionStrategyTest3 extends StrategyTestHelper {
         response == overallResponse
     }
 
+    def "nested list hydration under a renamed top level field"() {
+        given:
+        def overallSchema = TestUtil.schemaFromNdsl([Foo:'''
+        service Foo {
+              type Query {
+                fooService: FooService => renamed from service
+              } 
+              
+              type FooService => renamed from Service {
+                otherServices: Connection => hydrated from Foo.connection(id: $source.id)
+              }
+              
+              type Connection {
+                edges: [Edge]
+                nodes: [Node] => hydrated from Foo.node(id: $source.edges.node)
+              }
+              type Node {
+                space: Space => hydrated from Foo.space(id : $source.id)
+                id: ID
+              }
+              
+              type Space {
+                id: ID
+                name: String
+              }
+              
+              type Edge {
+                 node: Node => hydrated from Foo.node(id: $source.node)
+                 name: String
+                 id: ID
+              }
+
+        }
+        '''])
+        def underlyingSchema = TestUtil.schema("""
+          type Query {
+            service: Service
+            node(id: ID): Node
+            connection(id: ID): Connection
+            space(id: ID): Space
+          } 
+          
+          type Service {
+            id: ID
+          }
+          
+          type Space {
+            id: ID
+            name: String
+          }
+           
+          type Connection {
+            edges: [Edge]
+            nodes: [ID]
+          }
+          
+          type Edge {
+             node: ID
+             name: String
+             id: ID
+          }
+          type Node {
+             detailId: ID!
+             name: String
+             id: ID
+          }
+    """)
+
+
+        def query = """{
+                        fooService { 
+                            otherServices { 
+                                nodes {
+                                    space {
+                                        id
+                                    }
+                                }
+                            }
+                        }
+                       }"""
+
+        def expectedQuery1 = "query nadel_2_Foo {service {id}}"
+        def response1 = [service:[id: "ID"]]
+
+        def expectedQuery2 = "query nadel_2_Foo {connection(id:\"ID\") {edges {node}}}"
+        def response2 = [connection: [edges: [[node:"1"]]]]
+
+        def expectedQuery3 = "query nadel_2_Foo {node(id:\"1\") {id}}"
+        def response3 = [node: [id: "1a"]]
+
+        def expectedQuery4 = "query nadel_2_Foo {space(id:\"1a\") {id}}"
+        def response4 = [space: [id: "apple"]]
+
+
+        def overallResponse = [fooService:[otherServices:[nodes:[[space:[id:"apple"]]]]]]
+
+
+        Map response
+        List<GraphQLError> errors
+        when:
+        (response, errors) = test1ServiceWithNHydration(
+                overallSchema,
+                "Foo",
+                underlyingSchema,
+                query,
+                ["fooService"],
+                [expectedQuery1, expectedQuery2, expectedQuery3, expectedQuery4],
+                [response1, response2, response3, response4],
+                4,
+                resultComplexityAggregator
+        )
+        then:
+        errors.size() == 0
+        response == overallResponse
+    }
+
 
 }

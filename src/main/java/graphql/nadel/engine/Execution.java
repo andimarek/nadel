@@ -88,6 +88,7 @@ public class Execution {
                 .originalOperationName(document, executionInput.getOperationName())
                 .artificialFieldsUUID(nadelExecutionParams.getArtificialFieldsUUID())
                 .normalizedOverallQuery(normalizedQueryFromAst)
+                .nadelExecutionHints(nadelExecutionParams.getNadelExecutionHints())
                 .build();
 
         executionInput = executionInput.transform(builder -> builder.context(nadelContext));

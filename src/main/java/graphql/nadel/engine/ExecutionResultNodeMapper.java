@@ -31,18 +31,18 @@ public class ExecutionResultNodeMapper {
         ResultPath mappedPath = pathMapper.mapPath(node.getResultPath(), node.getResultKey(), environment);
         GraphQLObjectType mappedObjectType;
         GraphQLFieldDefinition mappedFieldDefinition;
-        if (environment.parentNode instanceof HydrationInputNode && mappedPath.isListSegment()) {
-            mappedObjectType = environment.parentNode.getObjectType();
-            mappedFieldDefinition = environment.parentNode.getFieldDefinition();
+        if (environment.correctParentNode instanceof HydrationInputNode && mappedPath.isListSegment()) {
+            mappedObjectType = environment.correctParentNode.getObjectType();
+            mappedFieldDefinition = environment.correctParentNode.getFieldDefinition();
         } else {
-            mappedObjectType = mapObjectType(node, typeRenameMappings, overallSchema, environment.parentNode);
+            mappedObjectType = mapObjectType(node, typeRenameMappings, overallSchema, environment.correctParentNode);
             mappedFieldDefinition = getFieldDef(overallSchema, mappedObjectType, node.getFieldName());
         }
 
         int typeDecrementValue = node instanceof ListExecutionResultNode ? -node.getChildren().size() : 0;
         checkForTypeRename(mappedFieldDefinition, node.getFieldDefinition(), typeRenameMappings, resultCounter, typeDecrementValue);
         return node.transform(builder -> builder
-                .executionPath(mappedPath)
+                .resultPath(mappedPath)
                 .objectType(mappedObjectType)
                 .fieldDefinition(mappedFieldDefinition)
         );

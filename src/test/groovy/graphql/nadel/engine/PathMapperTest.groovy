@@ -11,7 +11,7 @@ class PathMapperTest extends Specification {
         def parentPath = ResultPath.parse("/top")
         def childPath = ResultPath.parse("/unexpected/sub")
         def parentNode = Mock(ExecutionResultNode)
-        def environment = new UnapplyEnvironment(parentNode, false, false, null, null)
+        def environment = new UnapplyEnvironment(parentNode, parentNode,false, false, null, null)
         1 * parentNode.getResultPath() >> parentPath
 
         when:
@@ -27,7 +27,7 @@ class PathMapperTest extends Specification {
         def parentPath = ResultPath.parse("/top/sub")
         def childPath = ResultPath.parse("/unexpected/sub[0]")
         def parentNode = Mock(ExecutionResultNode)
-        def environment = new UnapplyEnvironment(parentNode, false, false, null, null)
+        def environment = new UnapplyEnvironment(parentNode, parentNode,false, false, null, null)
         1 * parentNode.getResultPath() >> parentPath
 
         when:
@@ -43,7 +43,7 @@ class PathMapperTest extends Specification {
         def parentPath = ResultPath.parse("/top")
         def childPath = ResultPath.parse("/top/sub")
         def parentNode = Mock(ExecutionResultNode)
-        def environment = new UnapplyEnvironment(parentNode, false, false, null, null)
+        def environment = new UnapplyEnvironment(parentNode, parentNode,false, false, null, null)
         1 * parentNode.getResultPath() >> parentPath
 
         when:
@@ -59,7 +59,7 @@ class PathMapperTest extends Specification {
         def parentPath = ResultPath.parse("/top/sub")
         def childPath = ResultPath.parse("/top/sub[0]")
         def parentNode = Mock(ExecutionResultNode)
-        def environment = new UnapplyEnvironment(parentNode, false, false, null, null)
+        def environment = new UnapplyEnvironment(parentNode, parentNode,false, false, null, null)
         1 * parentNode.getResultPath() >> parentPath
 
         when:

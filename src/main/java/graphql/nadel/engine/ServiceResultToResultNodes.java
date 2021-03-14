@@ -126,7 +126,7 @@ public class ServiceResultToResultNodes {
                                                      List<String> fieldIds,
                                                      ElapsedTime elapsedTime) {
         Object fetchedValue = fetchValue(source, normalizedQueryField.getResultKey());
-        return analyseValue(context, fetchedValue, normalizedQueryField, normalizedQueryFromAst, executionPath, fieldIds, elapsedTime);
+        return analyzeValue(context, fetchedValue, normalizedQueryField, normalizedQueryFromAst, executionPath, fieldIds, elapsedTime);
     }
 
     private Object fetchValue(Object source, String key) {
@@ -138,7 +138,7 @@ public class ServiceResultToResultNodes {
         return map.get(key);
     }
 
-    private ExecutionResultNode analyseValue(ExecutionContext executionContext,
+    private ExecutionResultNode analyzeValue(ExecutionContext executionContext,
                                              Object fetchedValue,
                                              NormalizedQueryField normalizedQueryField,
                                              NormalizedQueryFromAst normalizedQueryFromAst,
@@ -197,7 +197,7 @@ public class ServiceResultToResultNodes {
             }
         }
         return newObjectExecutionResultNode()
-                .executionPath(executionPath)
+                .resultPath(executionPath)
                 .alias(normalizedField.getAlias())
                 .fieldIds(objectFieldIds)
                 .objectType(normalizedField.getObjectType())
@@ -222,7 +222,7 @@ public class ServiceResultToResultNodes {
         } else {
             TypeMismatchError error = new TypeMismatchError(executionPath, curType);
             return LeafExecutionResultNode.newLeafExecutionResultNode()
-                    .executionPath(executionPath)
+                    .resultPath(executionPath)
                     .alias(normalizedQueryField.getAlias())
                     .fieldDefinition(normalizedQueryField.getFieldDefinition())
                     .objectType(normalizedQueryField.getObjectType())
@@ -240,7 +240,7 @@ public class ServiceResultToResultNodes {
                                                                    ElapsedTime elapsedTime,
                                                                    NonNullableFieldWasNullError nonNullableFieldWasNullError) {
         return newLeafExecutionResultNode()
-                .executionPath(executionPath)
+                .resultPath(executionPath)
                 .alias(normalizedQueryField.getAlias())
                 .fieldDefinition(normalizedQueryField.getFieldDefinition())
                 .objectType(normalizedQueryField.getObjectType())
@@ -256,7 +256,7 @@ public class ServiceResultToResultNodes {
                                                   List<String> fieldIds,
                                                   ElapsedTime elapsedTime) {
         return newLeafExecutionResultNode()
-                .executionPath(executionPath)
+                .resultPath(executionPath)
                 .alias(normalizedQueryField.getAlias())
                 .fieldDefinition(normalizedQueryField.getFieldDefinition())
                 .objectType(normalizedQueryField.getObjectType())
@@ -283,7 +283,7 @@ public class ServiceResultToResultNodes {
             index++;
         }
         return ListExecutionResultNode.newListExecutionResultNode()
-                .executionPath(executionPath)
+                .resultPath(executionPath)
                 .alias(normalizedQueryField.getAlias())
                 .fieldDefinition(normalizedQueryField.getFieldDefinition())
                 .objectType(normalizedQueryField.getObjectType())
@@ -326,7 +326,7 @@ public class ServiceResultToResultNodes {
         } catch (CoercingSerializeException e) {
             SerializationError error = new SerializationError(executionPath, e);
             return newLeafExecutionResultNode()
-                    .executionPath(executionPath)
+                    .resultPath(executionPath)
                     .alias(normalizedQueryField.getAlias())
                     .fieldDefinition(normalizedQueryField.getFieldDefinition())
                     .objectType(normalizedQueryField.getObjectType())
@@ -343,7 +343,7 @@ public class ServiceResultToResultNodes {
             return createNullERN(normalizedQueryField, executionPath, fieldIds, elapsedTime);
         }
         return newLeafExecutionResultNode()
-                .executionPath(executionPath)
+                .resultPath(executionPath)
                 .alias(normalizedQueryField.getAlias())
                 .fieldDefinition(normalizedQueryField.getFieldDefinition())
                 .objectType(normalizedQueryField.getObjectType())
@@ -376,7 +376,7 @@ public class ServiceResultToResultNodes {
         } catch (CoercingSerializeException e) {
             SerializationError error = new SerializationError(executionPath, e);
             return newLeafExecutionResultNode()
-                    .executionPath(executionPath)
+                    .resultPath(executionPath)
                     .alias(normalizedQueryField.getAlias())
                     .fieldDefinition(normalizedQueryField.getFieldDefinition())
                     .objectType(normalizedQueryField.getObjectType())
@@ -387,7 +387,7 @@ public class ServiceResultToResultNodes {
                     .build();
         }
         return newLeafExecutionResultNode()
-                .executionPath(executionPath)
+                .resultPath(executionPath)
                 .alias(normalizedQueryField.getAlias())
                 .fieldDefinition(normalizedQueryField.getFieldDefinition())
                 .objectType(normalizedQueryField.getObjectType())

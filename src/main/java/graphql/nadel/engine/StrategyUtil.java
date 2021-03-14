@@ -95,7 +95,7 @@ public class StrategyUtil {
 
     public static <T extends ExecutionResultNode> T copyFieldInformation(ExecutionResultNode from, T to) {
         return (T) to.transform(builder -> builder
-                .executionPath(from.getResultPath())
+                .resultPath(from.getResultPath())
                 .fieldIds(from.getFieldIds())
                 .alias(from.getAlias())
                 .objectType(from.getObjectType())
@@ -107,7 +107,7 @@ public class StrategyUtil {
                 .fieldIds(NodeId.getIds(from.getField()))
                 .objectType(from.getFieldContainer())
                 .fieldDefinition(from.getFieldDefinition())
-                .executionPath(from.getPath())
+                .resultPath(from.getPath())
                 .build();
     }
 

@@ -36,7 +36,7 @@ public class RootExecutionResultNode extends ObjectExecutionResultNode {
 
         @Override
         public RootExecutionResultNode build() {
-            super.executionPath(ResultPath.rootPath());
+            super.resultPath(ResultPath.rootPath());
             return new RootExecutionResultNode(this);
         }
     }
